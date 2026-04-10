@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FFF5F7">
+  <meta name="description" content="育児家庭のためのシンプル家計簿アプリ。ワンタップで簡単入力、残り金額が一目でわかる。">
+  <title>かけいぼ - かんたん家計簿</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ===== ヘッダー ===== -->
+    <header id="app-header">
+      <div class="header-inner">
+        <div class="header-top">
+          <h1 class="header-title">かけいぼ</h1>
+          <div class="mode-switch" id="mode-switch">
+            <button class="mode-btn active" data-mode="family">👪 家庭</button>
+            <button class="mode-btn" data-mode="personal">💻 個人</button>
+          </div>
+        </div>
+        <div class="header-tabs">
+          <button class="tab-btn active" data-tab="household" id="tab-household">家計管理</button>
+          <button class="tab-btn" data-tab="sidejob" id="tab-sidejob">分析</button>
+        </div>
+        <div class="header-month" id="header-month">
+          <button class="month-nav" id="month-prev">‹</button>
+          <span id="current-month">2026年4月</span>
+          <button class="month-nav" id="month-next">›</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== ホーム画面 ===== -->
+    <section class="screen active" id="screen-home">
+      <div class="screen-content">
+        <!-- 習慣化リマインド -->
+        <div class="reminder-banner" id="reminder-banner" style="display:none;">
+          <span class="reminder-icon">📢</span>
+          <span class="reminder-text">今日まだ記録していません</span>
+        </div>
+
+        <!-- 連続記録 & チェック -->
+        <div class="habit-row">
+          <div class="streak-card-mini">
+            <span class="s-icon">🔥</span>
+            <span class="s-count" id="home-streak-count">0</span>
+            <span class="s-label">日連続</span>
+          </div>
+          <button class="daily-check-btn" id="daily-check-btn" onclick="App.toggleDailyCheck()">
+            <span class="c-icon">✅</span>
+            <span class="c-label">記録完了！</span>
+          </button>
+        </div>
+
+        <!-- 残り金額ダッシュボード -->
+        <div class="remaining-card" id="remaining-card">
+          <div class="dashboard-header">
+            <p class="remaining-label">今月あと使える金額</p>
+            <p class="remaining-amount" id="remaining-amount">¥0</p>
+          </div>
+          <div class="dashboard-grid">
+            <div class="db-stat">
+              <span class="db-label">今月の支出</span>
+              <span class="db-value" id="home-expense-total">¥0</span>
+            </div>
+            <div class="db-stat" id="db-diff-container">
+              <span class="db-label">先月比</span>
+              <span class="db-value" id="home-diff">¥0</span>
+            </div>
+          </div>
+          <div class="dashboard-advice" id="dashboard-advice">
+            <span class="advice-emoji" id="advice-emoji">✨</span>
+            <p class="advice-text" id="advice-text">記録を始めましょう！</p>
+          </div>
+        </div>
+
+        <!-- アクションカード -->
+        <div class="action-card" id="home-action-card" style="display:none;">
+          <div class="action-card-badge">今月のミッション</div>
+          <p class="action-issue" id="action-issue">外食が多いかも</p>
+          <p class="action-proposal" id="action-proposal">今週はあと1回だけ自炊に変えてみませんか？</p>
+          <div class="action-btn-row">
+            <button class="action-btn primary" onclick="App.openGoalModal()">目標にする！</button>
+          </div>
+        </div>
+
+        <!-- 目標進捗カード -->
+        <div class="goal-card" id="home-goal-card" style="display:none;">
+          <div class="goal-card-header">
+            <span class="goal-emoji">🎯</span>
+            <span class="goal-title" id="goal-title">外食を週2回まで</span>
+          </div>
+          <div class="goal-progress-row">
+            <div class="goal-bar">
+              <div class="goal-bar-fill" id="goal-bar-fill"></div>
+            </div>
+            <span class="goal-text" id="goal-progress-text">あと1回</span>
+          </div>
+          <button class="goal-reset-btn" onclick="App.resetGoal()">目標を変更</button>
+        </div>
+
+        <!-- 固定費割合カード -->
+        <div class="fixed-ratio-card" id="home-fixed-ratio-card">
+          <div class="ratio-header">
+            <span class="ratio-label">固定費の割合</span>
+            <span class="ratio-value" id="home-fixed-ratio">0%</span>
+          </div>
+          <div class="ratio-bar">
+            <div class="ratio-bar-fill" id="home-fixed-ratio-fill"></div>
+          </div>
+          <p class="ratio-msg" id="home-fixed-ratio-msg">収入の半分以内に抑えましょう</p>
+        </div>
+
+        <!-- 日次成功率カード -->
+        <div class="daily-success-card">
+          <div class="ds-header">
+            <span class="ds-label">今月の節約成功率</span>
+            <span class="ds-value" id="home-success-rate-days">0%</span>
+          </div>
+          <div class="ds-info">
+            今月は <strong id="home-success-days">0</strong> / <span id="home-total-days">0</span> 日 予算内です✨
+          </div>
+        </div>
+
+        <!-- 連続記録カード（詳細表示） -->
+        <div class="streak-card" id="streak-card" style="display:none;">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-info">
+            <span class="streak-count" id="streak-count">0</span>
+            <span class="streak-label">日連続記録中！</span>
+          </div>
+          <div class="streak-message" id="streak-message">今日も記録しよう！</div>
+        </div>
+
+        <!-- 予算プログレス -->
+        <div class="section-title">予算の残り</div>
+        <div class="budget-progress-list" id="budget-progress-list">
+          <!-- JS生成 -->
+        </div>
+
+        <!-- 最近の取引 -->
+        <div class="section-title">最近の記録</div>
+        <div class="recent-list" id="recent-list">
+          <!-- JS生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 副業ホーム画面 ===== -->
+    <section class="screen" id="screen-sidejob">
+      <div class="screen-content">
+        <!-- 副業サマリーカード -->
+        <div class="sidejob-summary-card">
+          <div class="sj-stat">
+            <span class="sj-stat-label">副業収入</span>
+            <span class="sj-stat-value income" id="sj-income">¥0</span>
+          </div>
+          <div class="sj-stat">
+            <span class="sj-stat-label">自己投資</span>
+            <span class="sj-stat-value expense" id="sj-investment">¥0</span>
+          </div>
+          <div class="sj-divider"></div>
+          <div class="sj-stat profit">
+            <span class="sj-stat-label">利益</span>
+            <span class="sj-stat-value" id="sj-profit">¥0</span>
+          </div>
+        </div>
+
+        <!-- 副業入力ボタン -->
+        <div class="sj-actions">
+          <button class="sj-action-btn income-btn" id="sj-add-income">
+            <span class="sj-action-icon">💰</span>
+            <span>収入を追加</span>
+          </button>
+          <button class="sj-action-btn expense-btn" id="sj-add-invest">
+            <span class="sj-action-icon">📚</span>
+            <span>投資を追加</span>
+          </button>
+        </div>
+
+        <!-- 副業カテゴリ別 -->
+        <div class="section-title">カテゴリ別内訳</div>
+        <div class="sj-breakdown" id="sj-breakdown">
+          <!-- JS生成 -->
+        </div>
+
+        <!-- 副業履歴 -->
+        <div class="section-title">副業の記録</div>
+        <div class="recent-list" id="sj-history">
+          <!-- JS生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 入力画面 ===== -->
+    <section class="screen" id="screen-input">
+      <div class="screen-content">
+        <!-- 支出/収入切り替え -->
+        <div class="input-type-toggle">
+          <button class="type-btn active" data-type="expense" id="btn-expense">支出</button>
+          <button class="type-btn" data-type="income" id="btn-income">収入</button>
+        </div>
+
+        <!-- クイック入力 -->
+        <div class="quick-input-section" id="quick-input-section">
+          <div class="section-title">よく使う項目</div>
+          <div class="quick-items" id="quick-items">
+            <!-- JS生成 -->
+          </div>
+        </div>
+
+        <!-- カテゴリ選択 -->
+        <div class="section-title" id="category-section-title">カテゴリを選択</div>
+        <div class="category-grid" id="category-grid">
+          <!-- JS生成 -->
+        </div>
+
+        <!-- 金額入力モーダル -->
+        <div class="amount-modal" id="amount-modal">
+          <div class="amount-modal-content">
+            <div class="modal-header">
+              <button class="modal-close" id="modal-close">✕</button>
+              <span class="modal-category" id="modal-category">食材</span>
+              <button class="modal-done" id="modal-done">完了</button>
+            </div>
+            <div class="amount-display">
+              <span class="amount-yen">¥</span>
+              <span class="amount-value" id="amount-value">0</span>
+            </div>
+            <input type="text" class="memo-input" id="memo-input" placeholder="メモ（任意）">
+            <input type="date" class="date-input" id="date-input">
+            <div class="numpad">
+              <button class="num-btn" data-num="1">1</button>
+              <button class="num-btn" data-num="2">2</button>
+              <button class="num-btn" data-num="3">3</button>
+              <button class="num-btn" data-num="4">4</button>
+              <button class="num-btn" data-num="5">5</button>
+              <button class="num-btn" data-num="6">6</button>
+              <button class="num-btn" data-num="7">7</button>
+              <button class="num-btn" data-num="8">8</button>
+              <button class="num-btn" data-num="9">9</button>
+              <button class="num-btn" data-num="00">00</button>
+              <button class="num-btn" data-num="0">0</button>
+              <button class="num-btn del" data-num="del">⌫</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== カレンダー画面 ===== -->
+    <section class="screen" id="screen-calendar">
+      <div class="screen-content">
+        <div class="calendar-container" id="calendar-container">
+          <div class="calendar-header">
+            <div class="cal-weekdays">
+              <span class="cal-weekday sun">日</span>
+              <span class="cal-weekday">月</span>
+              <span class="cal-weekday">火</span>
+              <span class="cal-weekday">水</span>
+              <span class="cal-weekday">木</span>
+              <span class="cal-weekday">金</span>
+              <span class="cal-weekday sat">土</span>
+            </div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid">
+            <!-- JS生成 -->
+          </div>
+        </div>
+        <!-- 選択日詳細 -->
+        <div class="day-detail" id="day-detail">
+          <div class="day-detail-header">
+            <span id="day-detail-date">4月10日</span>
+            <span class="day-detail-total" id="day-detail-total">¥0</span>
+          </div>
+          <div class="day-detail-list" id="day-detail-list">
+            <!-- JS生成 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== グラフ・分析画面 ===== -->
+    <section class="screen" id="screen-chart">
+      <div class="screen-content">
+        <!-- グラフタブ -->
+        <div class="chart-tabs">
+          <button class="chart-tab active" data-chart="pie" id="chart-tab-pie">カテゴリ別</button>
+          <button class="chart-tab" data-chart="bar" id="chart-tab-bar">月別推移</button>
+          <button class="chart-tab" data-chart="analysis" id="chart-tab-analysis">分析</button>
+        </div>
+
+        <!-- 円グラフ -->
+        <div class="chart-panel active" id="chart-pie-panel">
+          <div class="chart-wrapper">
+            <canvas id="pie-chart"></canvas>
+          </div>
+          <div class="chart-legend" id="pie-legend">
+            <!-- JS生成 -->
+          </div>
+        </div>
+
+        <!-- 棒グラフ -->
+        <div class="chart-panel" id="chart-bar-panel">
+          <div class="chart-wrapper">
+            <canvas id="bar-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- 分析 -->
+        <div class="chart-panel" id="chart-analysis-panel">
+          <div class="analysis-cards" id="analysis-cards">
+            <!-- JS生成 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 設定画面 ===== -->
+    <section class="screen" id="screen-settings">
+      <div class="screen-content">
+        <div class="settings-group">
+          <div class="settings-title">予算設定</div>
+          <div class="budget-settings" id="budget-settings">
+            <!-- JS生成 -->
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-title">データ管理</div>
+          <button class="settings-btn" id="btn-export-csv">
+            <span>📊</span> CSVエクスポート
+          </button>
+          <button class="settings-btn" id="btn-backup">
+            <span>💾</span> データバックアップ
+          </button>
+          <button class="settings-btn" id="btn-restore">
+            <span>📂</span> データ復元
+          </button>
+          <input type="file" id="restore-file" accept=".json" style="display:none">
+          <button class="settings-btn danger" id="btn-reset">
+            <span>🗑️</span> データリセット
+          </button>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-title">アプリについて</div>
+          <div class="about-text">
+            <p>かけいぼ v1.0</p>
+            <p>育児家庭のためのシンプル家計簿</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ポジティブメッセージ ===== -->
+    <div class="positive-toast" id="positive-toast">
+      <span class="toast-emoji">✨</span>
+      <span class="toast-message" id="toast-message">記録できてえらい！</span>
+    </div>
+
+    <!-- ===== 副業入力モーダル ===== -->
+    <div class="amount-modal" id="sj-amount-modal">
+      <div class="amount-modal-content">
+        <div class="modal-header">
+          <button class="modal-close" id="sj-modal-close">✕</button>
+          <span class="modal-category" id="sj-modal-title">副業収入</span>
+          <button class="modal-done" id="sj-modal-done">完了</button>
+        </div>
+        <div class="sj-category-select" id="sj-category-select">
+          <!-- JS生成 -->
+        </div>
+        <div class="amount-display">
+          <span class="amount-yen">¥</span>
+          <span class="amount-value" id="sj-amount-value">0</span>
+        </div>
+        <input type="text" class="memo-input" id="sj-memo-input" placeholder="メモ（任意）">
+        <input type="date" class="date-input" id="sj-date-input">
+        <div class="numpad" id="sj-numpad">
+          <button class="num-btn" data-num="1">1</button>
+          <button class="num-btn" data-num="2">2</button>
+          <button class="num-btn" data-num="3">3</button>
+          <button class="num-btn" data-num="4">4</button>
+          <button class="num-btn" data-num="5">5</button>
+          <button class="num-btn" data-num="6">6</button>
+          <button class="num-btn" data-num="7">7</button>
+          <button class="num-btn" data-num="8">8</button>
+          <button class="num-btn" data-num="9">9</button>
+          <button class="num-btn" data-num="00">00</button>
+          <button class="num-btn" data-num="0">0</button>
+          <button class="num-btn del" data-num="del">⌫</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 確認ダイアログ ===== -->
+    <div class="confirm-dialog" id="confirm-dialog">
+      <div class="confirm-content">
+        <p class="confirm-message" id="confirm-message"></p>
+        <div class="confirm-actions">
+          <button class="confirm-btn cancel" id="confirm-cancel">キャンセル</button>
+          <button class="confirm-btn ok" id="confirm-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ボトムナビ ===== -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-screen="home" id="nav-home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">ホーム</span>
+      </button>
+      <button class="nav-item" data-screen="input" id="nav-input">
+        <span class="nav-icon">✏️</span>
+        <span class="nav-label">入力</span>
+      </button>
+      <button class="nav-item" data-screen="calendar" id="nav-calendar">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">カレンダー</span>
+      </button>
+      <button class="nav-item" data-screen="chart" id="nav-chart">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">グラフ</span>
+      </button>
+      <button class="nav-item" data-screen="fixed" id="nav-fixed">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">固定費</span>
+      </button>
+      <button class="nav-item" data-screen="settings" id="nav-settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">設定</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- 目標設定モーダル -->
+  <div class="modal" id="goal-modal">
+    <div class="modal-content side-up">
+      <h3 class="modal-title">目標をセットする</h3>
+      <p class="modal-subtitle">無理のない範囲で決めてみましょう♪</p>
+      
+      <div class="goal-options">
+        <button class="goal-option-btn" data-goal="eat_out_limit">
+          <span class="g-opt-icon">🍽️</span>
+          <span class="g-opt-name">外食を〇回までにする</span>
+        </button>
+        <button class="goal-option-btn" data-goal="category_budget">
+          <span class="g-opt-icon">💰</span>
+          <span class="g-opt-name">特定の予算を守る</span>
+        </button>
+        <button class="goal-option-btn" data-goal="total_budget">
+          <span class="g-opt-icon">🏠</span>
+          <span class="g-opt-name">今月の支出を抑える</span>
+        </button>
+      </div>
+
+      <div id="goal-setup-detail" style="display:none;">
+        <div class="gs-row">
+          <label id="gs-label">回数を指定</label>
+          <div class="gs-input-group">
+            <input type="number" id="gs-value" placeholder="3" inputmode="numeric">
+            <span id="gs-unit">回</span>
+          </div>
+        </div>
+        <button class="action-btn primary full" id="gs-submit-btn">この目標で頑張る！</button>
+      </div>
+
+      <button class="modal-close" onclick="App.closeGoalModal()">✕</button>
+    </div>
+  </div>
+
+  <!-- 固定費編集モーダル -->
+  <div class="modal" id="fixed-modal">
+    <div class="modal-content side-up">
+      <h3 class="modal-title">固定費を登録</h3>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="fixed-cat">
+          <option value="fixed_rent">🏠 家賃</option>
+          <option value="fixed_utility">💡 光熱費</option>
+          <option value="fixed_comm">📱 通信費</option>
+          <option value="insurance">🛡️ 保険</option>
+          <option value="subscription">📺 サブスク</option>
+          <option value="other_fixed">📌 その他固定費</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>金額</label>
+        <input type="number" id="fixed-amount" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>反映日 (毎月)</label>
+        <input type="number" id="fixed-day" placeholder="1" min="1" max="31">
+      </div>
+      <div class="form-group">
+        <label>メモ</label>
+        <input type="text" id="fixed-memo" placeholder="例：家賃">
+      </div>
+      <button class="action-btn primary full" onclick="App.saveFixed()">保存する</button>
+      <button class="modal-close" onclick="App.closeFixedModal()">✕</button>
+    </div>
+  </div>
+
+  <!-- 固定費画面 (追加) -->
+  <div class="screen" id="screen-fixed">
+    <div class="screen-content">
+      <h3 class="section-title">固定費テンプレート</h3>
+      <p class="section-desc">毎月自動で反映される支出を管理します。</p>
+      <div class="fixed-list" id="fixed-list">
+        <!-- JSで描画 -->
+      </div>
+      <button class="add-fixed-btn" onclick="App.openFixedModal()">
+        <span>＋ 固定費を追加する</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

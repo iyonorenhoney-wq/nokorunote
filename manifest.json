@@ -1,0 +1,17 @@
+{
+  "name": "かけいぼ",
+  "short_name": "かけいぼ",
+  "description": "育児家庭のためのシンプル家計簿アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5F7",
+  "theme_color": "#F8A4B8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
