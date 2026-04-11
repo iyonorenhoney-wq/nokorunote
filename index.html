@@ -240,6 +240,8 @@
             <input type="text" class="memo-input" id="memo-input" placeholder="メモ（任意）">
             <input type="date" class="date-input" id="date-input">
             <div class="numpad">
+              <button class="num-btn clr" data-num="clr">C</button>
+              <button class="num-btn del" data-num="del">⌫</button>
               <button class="num-btn" data-num="1">1</button>
               <button class="num-btn" data-num="2">2</button>
               <button class="num-btn" data-num="3">3</button>
@@ -251,7 +253,7 @@
               <button class="num-btn" data-num="9">9</button>
               <button class="num-btn" data-num="00">00</button>
               <button class="num-btn" data-num="0">0</button>
-              <button class="num-btn del" data-num="del">⌫</button>
+              <button class="num-btn" data-num="000">000</button>
             </div>
           </div>
         </div>
@@ -387,6 +389,8 @@
         <input type="text" class="memo-input" id="sj-memo-input" placeholder="メモ（任意）">
         <input type="date" class="date-input" id="sj-date-input">
         <div class="numpad" id="sj-numpad">
+          <button class="num-btn clr" data-num="clr">C</button>
+          <button class="num-btn del" data-num="del">⌫</button>
           <button class="num-btn" data-num="1">1</button>
           <button class="num-btn" data-num="2">2</button>
           <button class="num-btn" data-num="3">3</button>
@@ -398,7 +402,7 @@
           <button class="num-btn" data-num="9">9</button>
           <button class="num-btn" data-num="00">00</button>
           <button class="num-btn" data-num="0">0</button>
-          <button class="num-btn del" data-num="del">⌫</button>
+          <button class="num-btn" data-num="000">000</button>
         </div>
       </div>
     </div>
@@ -489,8 +493,9 @@
           <option value="fixed_rent">🏠 家賃</option>
           <option value="fixed_utility">💡 光熱費</option>
           <option value="fixed_comm">📱 通信費</option>
-          <option value="insurance">🛡️ 保険</option>
-          <option value="subscription">📺 サブスク</option>
+          <option value="fixed_insurance">🛡️ 保険</option>
+          <option value="fixed_loan">🏦 ローン</option>
+          <option value="fixed_sub">📺 サブスク</option>
           <option value="other_fixed">📌 その他固定費</option>
         </select>
       </div>
@@ -522,6 +527,26 @@
       <button class="add-fixed-btn" onclick="App.openFixedModal()">
         <span>＋ 固定費を追加する</span>
       </button>
+    </div>
+  </div>
+
+  <!-- カテゴリ追加モーダル -->
+  <div class="modal" id="custom-cat-modal">
+    <div class="modal-content side-up">
+      <h3 class="modal-title">新しいカテゴリ</h3>
+      <div class="form-group">
+        <label>名前</label>
+        <input type="text" id="cc-name" placeholder="例：コーヒー代">
+      </div>
+      <div class="form-group">
+        <label>アイコン (絵文字)</label>
+        <div class="emoji-selector">
+          <input type="text" id="cc-icon" value="📌" maxlength="2" style="text-align:center; font-size:24px;">
+          <p class="emoji-hint">キーボードから好きな絵文字を入力してください</p>
+        </div>
+      </div>
+      <button class="action-btn primary full" onclick="App.saveCustomCategory()">カテゴリを追加する</button>
+      <button class="modal-close" onclick="App.closeCustomCatModal()">✕</button>
     </div>
   </div>
 

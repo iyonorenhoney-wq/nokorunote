@@ -18,15 +18,19 @@ const DB = (() => {
     fixed_rent:     { name: '家賃',           parent: '固定費', icon: '🏠', color: '#8E8E8E' },
     fixed_utility:  { name: '光熱費',         parent: '固定費', icon: '💡', color: '#A0A0A0' },
     fixed_comm:     { name: '通信費',         parent: '固定費', icon: '📱', color: '#B0B0B0' },
+    fixed_insurance:{ name: '保険',           parent: '固定費', icon: '🛡️', color: '#9BB8FF' },
+    fixed_loan:     { name: 'ローン',         parent: '固定費', icon: '🏦', color: '#A0A0FF' },
+    fixed_sub:      { name: 'サブスク',       parent: '固定費', icon: '📺', color: '#D2A0F0' },
     medical:        { name: '医療費',         parent: null,     icon: '🏥', color: '#FF9B9B' },
     sudden:         { name: '突発費',         parent: null,     icon: '⚡', color: '#FFB347' },
     other_expense:  { name: 'その他',         parent: null,     icon: '📌', color: '#C0C0C0' },
   };
 
   const INCOME_CATEGORIES = {
-    salary:       { name: '給与',       icon: '💰', color: '#7EC8B0' },
-    sidejob:      { name: '副業収入',   icon: '💻', color: '#A0D2F0' },
-    other_income: { name: 'その他収入', icon: '🎁', color: '#FFD4A0' },
+    salary:          { name: '給与',       icon: '💰', color: '#7EC8B0' },
+    sidejob:         { name: '副業収入',   icon: '💻', color: '#A0D2F0' },
+    child_allowance: { name: '児童手当',   icon: '👶', color: '#FFB8C9' },
+    other_income:    { name: 'その他収入', icon: '🎁', color: '#FFD4A0' },
   };
 
   const SIDEJOB_INCOME_CATS = {
@@ -66,6 +70,7 @@ const DB = (() => {
   const KEY_FIXED = 'kakeibo_fixed_costs';
   const KEY_CHECKS = 'kakeibo_daily_checks';
   const KEY_FIXED_APPLIED = 'kakeibo_fixed_applied_months';
+  const KEY_CUSTOM_CATS = 'kakeibo_custom_categories';
 
   function load(key, fallback) {
     try {
@@ -420,12 +425,13 @@ const DB = (() => {
       if (!breakdown[t.category]) breakdown[t.category] = 0;
       breakdown[t.category] += t.amount;
     });
+    const allCats = getAllExpenseCategories();
     return Object.entries(breakdown)
       .map(([key, amount]) => ({
         key,
-        name: (EXPENSE_CATEGORIES[key] || {}).name || key,
-        icon: (EXPENSE_CATEGORIES[key] || {}).icon || '📌',
-        color: (EXPENSE_CATEGORIES[key] || {}).color || '#C0C0C0',
+        name: (allCats[key] || {}).name || key,
+        icon: (allCats[key] || {}).icon || '📌',
+        color: (allCats[key] || {}).color || '#C0C0C0',
         amount,
       }))
       .sort((a, b) => b.amount - a.amount);
@@ -622,6 +628,57 @@ const DB = (() => {
     return { emoji: '👍', text: 'いいペースです。この調子で毎日コツコツ記録しましょう！' };
   }
 
+  // ─── カスタムカテゴリ ───
+  function getCustomCategories() {
+    return load(KEY_CUSTOM_CATS, []);
+  }
+
+  function addCustomCategory(cat) {
+    const all = getCustomCategories();
+    cat.id = 'custom_' + Date.now();
+    all.push(cat);
+    save(KEY_CUSTOM_CATS, all);
+    return cat;
+  }
+
+  function deleteCustomCategory(id) {
+    let all = getCustomCategories();
+    all = all.filter(c => c.id !== id);
+    save(KEY_CUSTOM_CATS, all);
+  }
+
+  function getAllExpenseCategories() {
+    const custom = getCustomCategories().filter(c => c.type === 'expense');
+    const base = { ...EXPENSE_CATEGORIES };
+    custom.forEach(c => {
+      base[c.id] = { name: c.name, icon: c.icon, color: c.color || '#C0C0C0', isCustom: true };
+    });
+    return base;
+  }
+
+  function getAllIncomeCategories() {
+    const custom = getCustomCategories().filter(c => c.type === 'income');
+    const base = { ...INCOME_CATEGORIES };
+    custom.forEach(c => {
+      base[c.id] = { name: c.name, icon: c.icon, color: c.color || '#7EC8B0', isCustom: true };
+    });
+    return base;
+  }
+
+  // 頻度順にカテゴリを取得
+  function getFrequentCategories(type, limit = 8) {
+    const txs = getTransactions().filter(t => t.type === type);
+    const counts = {};
+    txs.forEach(t => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    
+    const cats = type === 'expense' ? getAllExpenseCategories() : getAllIncomeCategories();
+    return Object.keys(cats)
+      .sort((a, b) => (counts[b] || 0) - (counts[a] || 0))
+      .slice(0, limit);
+  }
+
   return {
     EXPENSE_CATEGORIES,
     INCOME_CATEGORIES,
@@ -681,5 +738,11 @@ const DB = (() => {
     getFixedCostRatio,
     getDailyCheck,
     setDailyCheck,
+    getCustomCategories,
+    addCustomCategory,
+    deleteCustomCategory,
+    getAllExpenseCategories,
+    getAllIncomeCategories,
+    getFrequentCategories,
   };
 })();

@@ -70,6 +70,9 @@ const App = (() => {
       case 'settings': renderSettings(); break;
       case 'fixed': renderFixedList(); break;
     }
+    // スクロールをトップに戻す
+    const content = document.querySelector('.screen.active .screen-content');
+    if (content) content.scrollTop = 0;
   }
 
   function switchMode(mode) {
@@ -214,8 +217,9 @@ const App = (() => {
       let progressStr = '';
       let percent = 0;
 
+      const categories = DB.getAllExpenseCategories();
       if (goalProgress.type === 'category_count') {
-        label = `${(DB.EXPENSE_CATEGORIES[goalProgress.category] || {}).name}を${goalProgress.limit}回まで`;
+        label = `${(categories[goalProgress.category] || {}).name}を${goalProgress.limit}回まで`;
         const remain = Math.max(0, goalProgress.limit - goalProgress.current);
         progressStr = remain > 0 ? `あと ${remain}回` : '達成！✨';
         percent = Math.min((goalProgress.current / goalProgress.limit) * 100, 100);
@@ -316,7 +320,8 @@ const App = (() => {
     }
 
     container.innerHTML = keys.map(k => {
-      const cat = DB.EXPENSE_CATEGORIES[k];
+      const categories = DB.getAllExpenseCategories();
+      const cat = categories[k];
       if (!cat) return '';
       const budget = budgets[k];
       const spent = DB.getCategoryTotal(currentMonth, k);
@@ -361,14 +366,15 @@ const App = (() => {
     }
 
     container.innerHTML = txs.map(t => {
-      const cat = t.type === 'expense' ? DB.EXPENSE_CATEGORIES[t.category] : DB.INCOME_CATEGORIES[t.category];
+      const categories = t.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+      const cat = categories[t.category];
       const icon = cat?.icon || '📌';
       const name = cat?.name || t.category;
       const amountClass = t.type === 'expense' ? 'expense' : 'income';
       const prefix = t.type === 'income' ? '+' : '-';
       return `
         <div class="recent-item" data-id="${t.id}">
-          <div class="recent-icon">${icon}</div>
+          <div class="recent-icon" style="background:${cat?.color || 'var(--bg)'}20; color:${cat?.color || 'var(--text)'}">${icon}</div>
           <div class="recent-info">
             <div class="recent-name">${name}</div>
             <div class="recent-meta">${formatDate(t.date)}${t.memo ? ' · ' + t.memo : ''}</div>
@@ -397,42 +403,62 @@ const App = (() => {
 
   function renderCategories() {
     const grid = document.getElementById('category-grid');
-    const cats = inputType === 'expense' ? DB.EXPENSE_CATEGORIES : DB.INCOME_CATEGORIES;
+    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const frequent = DB.getFrequentCategories(inputType, 8);
+    
+    // 頻度順にソートし、それ以外を後ろに
+    const otherKeys = Object.keys(allCats).filter(k => !frequent.includes(k));
+    const sortedKeys = [...frequent, ...otherKeys];
 
-    grid.innerHTML = Object.entries(cats).map(([key, cat]) => `
-      <div class="category-item ${inputType === 'income' ? 'income-cat' : ''}" data-cat="${key}" onclick="App.selectCategory('${key}')">
-        <span class="cat-icon">${cat.icon}</span>
-        <span class="cat-name">${cat.name}</span>
-        ${cat.parent ? `<span class="cat-parent">${cat.parent}</span>` : ''}
+    grid.innerHTML = sortedKeys.map(key => {
+      const cat = allCats[key];
+      const isFrequent = frequent.includes(key);
+      return `
+        <div class="category-item ${inputType === 'income' ? 'income-cat' : ''}" data-cat="${key}" onclick="App.selectCategory('${key}')">
+          <span class="cat-icon">${cat.icon}</span>
+          <span class="cat-name">${cat.name}</span>
+          ${cat.parent ? `<span class="cat-parent">${cat.parent}</span>` : ''}
+          ${isFrequent ? '<span class="frequent-badge">よく使う</span>' : ''}
+        </div>
+      `;
+    }).join('') + `
+      <div class="category-item add-cat" onclick="App.openCustomCatModal()">
+        <span class="cat-icon" style="font-size:20px; font-weight:bold; color:var(--primary);">＋</span>
+        <span class="cat-name">追加</span>
       </div>
-    `).join('');
+    `;
   }
 
   function renderQuickItems() {
     const container = document.getElementById('quick-items');
-    const history = DB.getHistory().filter(h => h.type === inputType);
+    const history = DB.getHistory(); // 全履歴からフィルタ
+    const filtered = history.filter(h => h.type === inputType);
 
     if (history.length === 0) {
       container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">入力すると履歴が表示されます</span>';
       return;
     }
 
-    container.innerHTML = history.map((h, i) => {
-      const cat = inputType === 'expense' ? DB.EXPENSE_CATEGORIES[h.category] : DB.INCOME_CATEGORIES[h.category];
+    container.innerHTML = filtered.slice(0, 8).map((h, i) => {
+      const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+      const cat = allCats[h.category];
       const icon = cat?.icon || '📌';
       const name = cat?.name || h.category;
       return `
         <button class="quick-item" onclick="App.quickInput(${i})">
           <span>${icon}</span>
-          <span>${name}</span>
-          <span class="qi-amount">${formatMoney(h.amount)}</span>
+          <div style="display:flex; flex-direction:column; align-items:flex-start;">
+            <span class="qi-name" style="font-size:10px; opacity:0.8;">${name}</span>
+            <span class="qi-amount">${formatMoney(h.amount)}</span>
+          </div>
         </button>`;
     }).join('');
   }
 
   function selectCategory(catKey) {
     selectedCategory = catKey;
-    const cat = inputType === 'expense' ? DB.EXPENSE_CATEGORIES[catKey] : DB.INCOME_CATEGORIES[catKey];
+    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const cat = allCats[catKey];
     document.getElementById('modal-category').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
     document.getElementById('amount-value').textContent = '0';
     document.getElementById('memo-input').value = '';
@@ -441,11 +467,13 @@ const App = (() => {
   }
 
   function quickInput(index) {
-    const history = DB.getHistory().filter(h => h.type === inputType);
-    const h = history[index];
+    const history = DB.getHistory();
+    const filtered = history.filter(h => h.type === inputType);
+    const h = filtered[index];
     if (!h) return;
     selectedCategory = h.category;
-    const cat = inputType === 'expense' ? DB.EXPENSE_CATEGORIES[h.category] : DB.INCOME_CATEGORIES[h.category];
+    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const cat = allCats[h.category];
     document.getElementById('modal-category').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
     document.getElementById('amount-value').textContent = h.amount.toLocaleString();
     document.getElementById('memo-input').value = h.memo || '';
@@ -458,6 +486,8 @@ const App = (() => {
     let val = el.textContent.replace(/,/g, '');
     if (num === 'del') {
       val = val.slice(0, -1) || '0';
+    } else if (num === 'clr') {
+      val = '0';
     } else {
       if (val === '0') val = '';
       val += num;
@@ -471,6 +501,8 @@ const App = (() => {
     let val = el.textContent.replace(/,/g, '');
     if (num === 'del') {
       val = val.slice(0, -1) || '0';
+    } else if (num === 'clr') {
+      val = '0';
     } else {
       if (val === '0') val = '';
       val += num;
@@ -684,10 +716,11 @@ const App = (() => {
       list.innerHTML = '<div class="empty-message">この日の記録はありません</div>';
     } else {
       list.innerHTML = txs.map(t => {
-        const cat = t.type === 'expense' ? DB.EXPENSE_CATEGORIES[t.category] : DB.INCOME_CATEGORIES[t.category];
+        const categories = t.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+        const cat = categories[t.category];
         return `
           <div class="recent-item">
-            <div class="recent-icon">${cat?.icon || '📌'}</div>
+            <div class="recent-icon" style="background:${cat?.color || 'var(--bg)'}20; color:${cat?.color || 'var(--text)'}">${cat?.icon || '📌'}</div>
             <div class="recent-info">
               <div class="recent-name">${cat?.name || t.category}</div>
               ${t.memo ? `<div class="recent-meta">${t.memo}</div>` : ''}
@@ -940,13 +973,17 @@ const App = (() => {
     const container = document.getElementById('budget-settings');
     const budgets = DB.getBudgets(currentMonth);
 
-    container.innerHTML = Object.entries(DB.EXPENSE_CATEGORIES).map(([key, cat]) => `
-      <div class="budget-setting-item">
+    const allCats = DB.getAllExpenseCategories();
+    container.innerHTML = Object.entries(allCats).map(([key, cat]) => `
+      <div class="budget-setting-item ${cat.isCustom ? 'custom' : ''}">
         <span class="budget-setting-icon">${cat.icon}</span>
         <span class="budget-setting-name">${cat.name}</span>
-        <input type="number" class="budget-setting-input" data-cat="${key}"
-               value="${budgets[key] || ''}" placeholder="¥0"
-               inputmode="numeric" onchange="App.onBudgetChange('${key}', this.value)">
+        <div style="flex:1; display:flex; gap:10px; align-items:center; justify-content:flex-end;">
+          <input type="number" class="budget-setting-input" data-cat="${key}"
+                 value="${budgets[key] || ''}" placeholder="¥0"
+                 inputmode="numeric" onchange="App.onBudgetChange('${key}', this.value)">
+          ${cat.isCustom ? `<button class="delete-custom-btn" onclick="App.confirmDeleteCustomCat('${key}')">🗑️</button>` : ''}
+        </div>
       </div>
     `).join('');
   }
@@ -1137,20 +1174,24 @@ const App = (() => {
       return;
     }
 
-    container.innerHTML = list.map((f, i) => `
-      <div class="fixed-item ${!f.active ? 'inactive' : ''}">
-        <div class="fixed-icon">${(DB.EXPENSE_CATEGORIES[f.category] || {}).icon || '📌'}</div>
-        <div class="fixed-info">
-          <span class="fixed-name">${f.memo || (DB.EXPENSE_CATEGORIES[f.category] || {}).name}</span>
-          <span class="fixed-meta">毎月 ${f.day}日反映</span>
+    container.innerHTML = list.map((f, i) => {
+      const allCats = DB.getAllExpenseCategories();
+      const cat = allCats[f.category] || { icon: '📌', name: f.category };
+      return `
+        <div class="fixed-item ${!f.active ? 'inactive' : ''}">
+          <div class="recent-icon" style="background:${cat.color}20; color:${cat.color}">${cat.icon}</div>
+          <div class="fixed-info">
+            <span class="fixed-name">${f.memo || cat.name}</span>
+            <span class="fixed-meta">毎月 ${f.day}日反映</span>
+          </div>
+          <div class="fixed-amount">${formatMoney(f.amount)}</div>
+          <div class="toggle-switch ${f.active ? 'active' : ''}" onclick="App.toggleFixedActive(${i})">
+            <div class="toggle-knob"></div>
+          </div>
+          <button class="recent-delete" style="position:static;opacity:1;margin-left:8px;" onclick="App.deleteFixed(${i})">✕</button>
         </div>
-        <div class="fixed-amount">${formatMoney(f.amount)}</div>
-        <div class="toggle-switch ${f.active ? 'active' : ''}" onclick="App.toggleFixedActive(${i})">
-          <div class="toggle-knob"></div>
-        </div>
-        <button class="recent-delete" style="position:static;opacity:1;margin-left:8px;" onclick="App.deleteFixed(${i})">✕</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function openFixedModal() {
@@ -1244,6 +1285,42 @@ const App = (() => {
     }
   }
 
+  // ─── カスタムカテゴリ ───
+  function openCustomCatModal() {
+    document.getElementById('cc-name').value = '';
+    document.getElementById('cc-icon').value = '📌';
+    document.getElementById('custom-cat-modal').classList.add('show');
+  }
+
+  function closeCustomCatModal() {
+    document.getElementById('custom-cat-modal').classList.remove('show');
+  }
+
+  function saveCustomCategory() {
+    const name = document.getElementById('cc-name').value.trim();
+    const icon = document.getElementById('cc-icon').value.trim();
+    if (!name || !icon) return;
+
+    DB.addCustomCategory({
+      name,
+      icon,
+      type: inputType,
+      color: '#C0C0C0'
+    });
+
+    closeCustomCatModal();
+    renderCategories();
+    showToastMessage('✨', 'カスタムカテゴリを追加しました！');
+  }
+
+  function confirmDeleteCustomCat(id) {
+    showConfirm('このカテゴリを削除しますか？\n登録済みの記録には影響しません。', () => {
+      DB.deleteCustomCategory(id);
+      renderCategories();
+      renderSettings();
+    });
+  }
+
   return {
     init,
     switchScreen,
@@ -1272,6 +1349,10 @@ const App = (() => {
     toggleFixedActive,
     toggleDailyCheck,
     quickInput,
+    openCustomCatModal,
+    closeCustomCatModal,
+    saveCustomCategory,
+    confirmDeleteCustomCat,
   };
 })();
 

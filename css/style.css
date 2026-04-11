@@ -734,28 +734,30 @@ html, body {
 .recent-item {
   background: var(--card);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  transition: transform 0.2s;
+  transition: all 0.2s;
   position: relative;
 }
 
 .recent-item:active {
-  transform: scale(0.98);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-light);
 }
 
 .recent-icon {
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--bg);
   flex-shrink: 0;
 }
@@ -766,19 +768,23 @@ html, body {
 }
 
 .recent-name {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 2px;
 }
 
 .recent-meta {
   font-size: 11px;
   color: var(--text-light);
+  font-weight: 500;
 }
 
 .recent-amount {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   flex-shrink: 0;
+  letter-spacing: -0.5px;
 }
 
 .recent-amount.income {
@@ -1162,10 +1168,10 @@ html, body {
 }
 
 .amount-value {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 800;
   color: var(--text);
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
 .memo-input, .date-input {
@@ -1189,29 +1195,43 @@ html, body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .num-btn {
   border: none;
   background: var(--bg);
-  border-radius: var(--radius-sm);
-  padding: 16px;
+  border-radius: var(--radius-md);
+  padding: 18px 0;
   font-family: var(--font);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.1s;
+  box-shadow: 0 4px 0 var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .num-btn:active {
   background: var(--primary-light);
-  transform: scale(0.95);
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--border);
+}
+
+.num-btn.clr {
+  background: #FFEBEF;
+  color: var(--danger);
+  box-shadow: 0 4px 0 #FFD6DE;
 }
 
 .num-btn.del {
-  color: var(--primary-dark);
+  background: #FFF5E0;
+  color: #B07030;
+  box-shadow: 0 4px 0 #FFEBBF;
 }
 
 /* 副業カテゴリ選択 */
@@ -1959,4 +1979,35 @@ html, body {
 
 .fade-in {
   animation: fadeIn 0.3s ease;
+}
+
+/* --- 絵文字セレクタ --- */
+.emoji-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.emoji-hint {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+/* --- よく使うカテゴリ --- */
+.frequent-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--primary);
+  color: #FFF;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(248, 164, 184, 0.4);
 }
