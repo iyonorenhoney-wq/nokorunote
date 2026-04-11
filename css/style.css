@@ -43,13 +43,14 @@
   --radius-full: 9999px;
   --nav-height: 72px;
   --header-height: 108px;
+  --app-height: 100dvh;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font: 'M PLUS Rounded 1c', sans-serif;
 }
 
 html, body {
-  height: 100%;
+  height: var(--app-height);
   overflow: hidden;
   font-family: var(--font);
   background: var(--bg);
@@ -60,7 +61,7 @@ html, body {
 }
 
 #app {
-  height: 100%;
+  height: var(--app-height);
   display: flex;
   flex-direction: column;
   max-width: 480px;
@@ -1087,7 +1088,7 @@ html, body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: var(--app-height);
   background: var(--bg);
   z-index: 2000;
   display: flex;
@@ -1108,8 +1109,10 @@ html, body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 20px);
-  overflow-y: hidden;
+  padding: calc(var(--safe-top) + 16px) 16px;
+  padding-bottom: calc(var(--safe-bottom) + 80px); /* キーボード表示時のマージン確保 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-header {
@@ -1929,6 +1932,13 @@ html, body {
   z-index: 100;
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+body.modal-open .bottom-nav {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-item {

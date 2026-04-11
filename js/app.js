@@ -476,6 +476,7 @@ const App = (() => {
     document.getElementById('date-input').value = DB.today();
     document.getElementById('btn-delete-tx').style.display = 'none';
     document.getElementById('amount-modal').classList.add('show');
+    document.body.classList.add('modal-open');
   }
 
   function openEditModal(txId) {
@@ -500,6 +501,7 @@ const App = (() => {
     document.getElementById('btn-delete-tx').style.display = 'block';
 
     document.getElementById('amount-modal').classList.add('show');
+    document.body.classList.add('modal-open');
   }
 
   function quickInput(index) {
@@ -515,6 +517,7 @@ const App = (() => {
     document.getElementById('memo-input').value = h.memo || '';
     document.getElementById('date-input').value = DB.today();
     document.getElementById('amount-modal').classList.add('show');
+    document.body.classList.add('modal-open');
   }
 
   function handleNumpad(num) {
@@ -594,6 +597,7 @@ const App = (() => {
 
   function closeAmountModal() {
     document.getElementById('amount-modal').classList.remove('show');
+    document.body.classList.remove('modal-open');
     selectedCategory = null;
   }
 
