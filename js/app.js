@@ -12,6 +12,7 @@ const App = (() => {
   let sjInputType = null; // sj_income | sj_invest
   let sjSelectedCategory = null;
   let editingId = null; // 編集中のID
+  let selectedDay = DB.today();
   let historyViewMode = 'month'; // month | week
   let historyWeekOffset = 0;
   let pieChart = null;
@@ -735,8 +736,8 @@ const App = (() => {
 
     grid.innerHTML = html;
 
-    // 今日を選択
-    selectDay(todayStr);
+    // 選択中の日を維持
+    selectDay(selectedDay);
   }
 
   function selectDay(dateStr) {
@@ -761,7 +762,7 @@ const App = (() => {
         const categories = t.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
         const cat = categories[t.category];
         return `
-          <div class="recent-item">
+          <div class="recent-item" onclick="App.openEditModal('${t.id}')">
             <div class="recent-icon" style="background:${cat?.color || 'var(--bg)'}20; color:${cat?.color || 'var(--text)'}">${cat?.icon || '📌'}</div>
             <div class="recent-info">
               <div class="recent-name">${cat?.name || t.category}</div>
