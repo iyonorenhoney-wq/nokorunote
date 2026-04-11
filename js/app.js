@@ -22,11 +22,49 @@ const App = (() => {
   async function init() {
     await DB.init();
     DB.applyMonthlyFixedCosts(DB.monthKey());
+    setupViewportHandler();
     bindEvents();
     updateMonthDisplay();
     renderHome();
     renderInput();
     checkReminder();
+  }
+
+  // ─── iOSキーボード対応 (visualViewport API) ───
+  function setupViewportHandler() {
+    if (!window.visualViewport) return;
+
+    const modal = document.getElementById('amount-modal');
+    const sjModal = document.getElementById('sj-amount-modal');
+
+    function adjustModalForKeyboard() {
+      // キーボード表示中、modalの高さをvisualViewportに合わせる
+      const vv = window.visualViewport;
+      const modals = [modal, sjModal].filter(m => m && m.classList.contains('show'));
+      modals.forEach(m => {
+        m.style.height = vv.height + 'px';
+        m.style.top = vv.offsetTop + 'px';
+      });
+    }
+
+    function resetModalSize() {
+      [modal, sjModal].forEach(m => {
+        if (!m) return;
+        m.style.height = '';
+        m.style.top = '';
+      });
+    }
+
+    window.visualViewport.addEventListener('resize', adjustModalForKeyboard);
+    window.visualViewport.addEventListener('scroll', adjustModalForKeyboard);
+
+    // モーダルが閉じたらリセット
+    const observer = new MutationObserver(() => {
+      const anyOpen = [modal, sjModal].some(m => m && m.classList.contains('show'));
+      if (!anyOpen) resetModalSize();
+    });
+    if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    if (sjModal) observer.observe(sjModal, { attributes: true, attributeFilter: ['class'] });
   }
 
   function checkReminder() {
@@ -596,10 +634,15 @@ const App = (() => {
   }
 
   function closeAmountModal() {
+    // キーボードを確実に閉じる（iOSでactiveElement.blurが必要）
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
     document.getElementById('amount-modal').classList.remove('show');
     document.body.classList.remove('modal-open');
     selectedCategory = null;
   }
+
 
   // ─── 副業画面 ───
   function renderSidejob() {
@@ -681,6 +724,7 @@ const App = (() => {
     ).join('');
 
     document.getElementById('sj-amount-modal').classList.add('show');
+    document.body.classList.add('modal-open');
   }
 
   function selectSjCategory(key) {
@@ -701,7 +745,11 @@ const App = (() => {
       memo: document.getElementById('sj-memo-input').value.trim(),
     });
 
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
     document.getElementById('sj-amount-modal').classList.remove('show');
+    document.body.classList.remove('modal-open');
     showPositiveToast();
     renderSidejob();
   }

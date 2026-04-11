@@ -49,8 +49,9 @@
   --font: 'M PLUS Rounded 1c', sans-serif;
 }
 
-html, body {
-  height: var(--app-height);
+html {
+  height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family: var(--font);
   background: var(--bg);
@@ -60,14 +61,35 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+body {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* モーダル表示中は背景スクロールを禁止 */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
 #app {
-  height: var(--app-height);
+  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
   position: relative;
   background: var(--bg);
+  overflow: hidden;
 }
 
 /* --- ヘッダー --- */
@@ -205,8 +227,10 @@ html, body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  /* ナビゲーション高さ + セーフエリアの余白を考慮 */
+  padding: 16px 16px calc(var(--nav-height) + max(16px, env(safe-area-inset-bottom)));
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* --- 残り金額カード --- */
@@ -1083,19 +1107,24 @@ html, body {
 }
 
 /* --- 金額入力モーダル --- */
+/* モーダルは #app の外側に出し、viewport 全体をおおうよう position:fixed+inset:0 で管理 */
 .amount-modal {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
-  height: var(--app-height);
+  height: 100%;
   background: var(--bg);
-  z-index: 2000;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   visibility: hidden;
   opacity: 0;
   transition: visibility 0.2s, opacity 0.2s;
+  /* iOS Safari のキーボード表示時にも適応 */
+  -webkit-overflow-scrolling: touch;
 }
 
 .amount-modal.show {
@@ -1104,15 +1133,19 @@ html, body {
 }
 
 .amount-modal-content {
-  background: var(--bg);
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--safe-top) + 16px) 16px;
-  padding-bottom: calc(var(--safe-bottom) + 80px); /* キーボード表示時のマージン確保 */
+  width: 100%;
+  height: 100%;
+  /* セーフエリア対応 */
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modal-header {
@@ -1215,9 +1248,11 @@ html, body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 8px;
+  /* numpadは画面下部に固定 - スクロール分のスペースを自動計算 */
   margin-top: auto;
-  padding-bottom: 10px;
+  flex-shrink: 0;
+  padding-bottom: 4px;
 }
 
 .num-btn {
@@ -1927,18 +1962,25 @@ html, body {
   background: var(--card);
   display: flex;
   justify-content: center;
-  padding-bottom: calc(var(--safe-bottom) + 8px);
+  /* セーフエリア対応 */
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
-  z-index: 100;
+  z-index: 500;
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
+/* モーダル表示中はナビを完全非表示 */
 body.modal-open .bottom-nav {
-  transform: translateY(100%);
+  transform: translateY(110%);
   opacity: 0;
   pointer-events: none;
+}
+
+/* モーダル表示中はヘッダーも非表示（z-index調整） */
+body.modal-open #app-header {
+  z-index: 500; /* モーダル(9999)の下に入る */
 }
 
 .nav-item {
