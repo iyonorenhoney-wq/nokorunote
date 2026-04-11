@@ -153,6 +153,9 @@
         <div class="recent-list" id="recent-list">
           <!-- JS生成 -->
         </div>
+        <button class="action-btn secondary full" style="margin-top:12px;" onclick="App.switchScreen('all-history')">
+          <span>📜</span> 全ての履歴を見る
+        </button>
       </div>
     </section>
 
@@ -229,16 +232,18 @@
         <div class="amount-modal" id="amount-modal">
           <div class="amount-modal-content">
             <div class="modal-header">
-              <button class="modal-close" id="modal-close">✕</button>
-              <span class="modal-category" id="modal-category">食材</span>
-              <button class="modal-done" id="modal-done">完了</button>
+              <button class="modal-close" id="modal-close"></button>
+              <span class="modal-category" id="modal-title-text">記録する</span>
+              <button class="modal-done" id="modal-done">保存</button>
             </div>
+            <div class="edit-category-chip" id="modal-category-chip">食材</div>
             <div class="amount-display">
               <span class="amount-yen">¥</span>
               <span class="amount-value" id="amount-value">0</span>
             </div>
             <input type="text" class="memo-input" id="memo-input" placeholder="メモ（任意）">
             <input type="date" class="date-input" id="date-input">
+            <button class="action-btn danger full" id="btn-delete-tx" style="display:none; margin-bottom:12px;" onclick="App.confirmDeleteTx()">この記録を削除する</button>
             <div class="numpad">
               <button class="num-btn clr" data-num="clr">C</button>
               <button class="num-btn del" data-num="del">⌫</button>
@@ -375,7 +380,7 @@
     <div class="amount-modal" id="sj-amount-modal">
       <div class="amount-modal-content">
         <div class="modal-header">
-          <button class="modal-close" id="sj-modal-close">✕</button>
+          <button class="modal-close" id="sj-modal-close"></button>
           <span class="modal-category" id="sj-modal-title">副業収入</span>
           <button class="modal-done" id="sj-modal-done">完了</button>
         </div>
@@ -479,7 +484,7 @@
         <button class="action-btn primary full" id="gs-submit-btn">この目標で頑張る！</button>
       </div>
 
-      <button class="modal-close" onclick="App.closeGoalModal()">✕</button>
+      <button class="modal-close" onclick="App.closeGoalModal()"></button>
     </div>
   </div>
 
@@ -515,7 +520,27 @@
         <input type="text" id="fixed-memo" placeholder="例：家賃">
       </div>
       <button class="action-btn primary full" onclick="App.saveFixed()">保存する</button>
-      <button class="modal-close" onclick="App.closeFixedModal()">✕</button>
+      <button class="modal-close" onclick="App.closeFixedModal()"></button>
+    </div>
+  </div>
+
+  <!-- 全履歴画面 -->
+  <div class="screen" id="screen-all-history">
+    <div class="screen-content">
+      <div class="history-filter-card">
+        <div class="period-tabs">
+          <button class="period-tab active" id="tab-period-month" onclick="App.setHistoryViewMode('month')">月</button>
+          <button class="period-tab" id="tab-period-week" onclick="App.setHistoryViewMode('week')">週</button>
+        </div>
+        <div class="month-selector">
+          <button class="month-btn" onclick="App.changeHistoryPeriod(-1)">◀</button>
+          <div class="current-month" id="history-period-display">2024年3月</div>
+          <button class="month-btn" onclick="App.changeHistoryPeriod(1)">▶</button>
+        </div>
+      </div>
+      <div id="all-history-list" class="recent-list">
+        <!-- JS生成 -->
+      </div>
     </div>
   </div>
 
@@ -549,7 +574,7 @@
         </div>
       </div>
       <button class="action-btn primary full" onclick="App.saveCustomCategory()">カテゴリを追加する</button>
-      <button class="modal-close" onclick="App.closeCustomCatModal()">✕</button>
+      <button class="modal-close" onclick="App.closeCustomCatModal()"></button>
     </div>
   </div>
 

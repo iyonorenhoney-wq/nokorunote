@@ -15,18 +15,18 @@ const DB = (() => {
     fun_personal:   { name: '個人娯楽',       parent: '娯楽費', icon: '🎮', color: '#FFC080' },
     beauty_salon:   { name: 'サロン',         parent: '美容費', icon: '💇', color: '#C9B8E8' },
     beauty_home:    { name: 'ホームケア',     parent: '美容費', icon: '💄', color: '#B0A0D8' },
-    fixed_rent:     { name: '家賃',           parent: '固定費', icon: '🏠', color: '#8E8E8E' },
+    fixed_rent:     { name: '家賃',           parent: '固定費', icon: '🏠', color: '#B38B6D' },
     fixed_electric: { name: '電気代',         parent: '固定費', icon: '⚡', color: '#FFD700' },
-    fixed_gas:      { name: 'ガス代',         parent: '固定費', icon: '🔥', color: '#FF8C00' },
-    fixed_water:    { name: '水道代',         parent: '固定費', icon: '💧', color: '#00BFFF' },
+    fixed_gas:      { name: 'ガス代',         parent: '固定費', icon: '🔥', color: '#FF4500' },
+    fixed_water:    { name: '水道代',         parent: '固定費', icon: '💧', color: '#1E90FF' },
     fixed_utility:  { name: '光熱費',         parent: '固定費', icon: '💡', color: '#A0A0A0' },
-    fixed_comm:     { name: '通信費',         parent: '固定費', icon: '📱', color: '#B0B0B0' },
-    fixed_insurance:{ name: '保険',           parent: '固定費', icon: '🛡️', color: '#9BB8FF' },
-    fixed_loan:     { name: 'ローン',         parent: '固定費', icon: '🏦', color: '#A0A0FF' },
-    fixed_sub:      { name: 'サブスク',       parent: '固定費', icon: '📺', color: '#D2A0F0' },
-    medical:        { name: '医療費',         parent: null,     icon: '🏥', color: '#FF9B9B' },
-    sudden:         { name: '突発費',         parent: null,     icon: '⚡', color: '#FFB347' },
-    other_expense:  { name: 'その他',         parent: null,     icon: '📌', color: '#C0C0C0' },
+    fixed_comm:     { name: '通信費',         parent: '固定費', icon: '📱', color: '#32CD32' },
+    fixed_insurance:{ name: '保険',           parent: '固定費', icon: '🛡️', color: '#4682B4' },
+    fixed_loan:     { name: 'ローン',         parent: '固定費', icon: '🏦', color: '#CD5C5C' },
+    fixed_sub:      { name: 'サブスク',       parent: '固定費', icon: '📺', color: '#DA70D6' },
+    medical:        { name: '医療費',         parent: null,     icon: '🏥', color: '#FF6B6B' },
+    sudden:         { name: '突発費',         parent: null,     icon: '⚡', color: '#FF8C00' },
+    other_expense:  { name: 'その他',         parent: null,     icon: '📌', color: '#95A5A6' },
   };
 
   const INCOME_CATEGORIES = {
@@ -194,6 +194,17 @@ const DB = (() => {
     updateStreak();
     setDailyCheck(tx.date, true);
     return tx;
+  }
+
+  function updateTransaction(id, updatedTx) {
+    const all = getTransactions();
+    const index = all.findIndex(t => t.id === id);
+    if (index === -1) return false;
+    
+    // IDと作成日を維持
+    all[index] = { ...all[index], ...updatedTx };
+    save(KEY_TX, all);
+    return true;
   }
 
   function deleteTransaction(id) {
@@ -701,6 +712,7 @@ const DB = (() => {
     getTransactions,
     getMonthTransactions,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     getMonthExpenses,
     getMonthIncomes,

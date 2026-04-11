@@ -11,6 +11,9 @@ const App = (() => {
   let selectedCategory = null;
   let sjInputType = null; // sj_income | sj_invest
   let sjSelectedCategory = null;
+  let editingId = null; // 編集中のID
+  let historyViewMode = 'month'; // month | week
+  let historyWeekOffset = 0;
   let pieChart = null;
   let barChart = null;
 
@@ -69,6 +72,7 @@ const App = (() => {
       case 'chart': renderCharts(); break;
       case 'settings': renderSettings(); break;
       case 'fixed': renderFixedList(); break;
+      case 'all-history': renderHistoryList(); break;
     }
     // スクロールをトップに戻す
     const content = document.querySelector('.screen.active .screen-content');
@@ -459,10 +463,41 @@ const App = (() => {
     selectedCategory = catKey;
     const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
     const cat = allCats[catKey];
-    document.getElementById('modal-category').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
+    
+    editingId = null;
+    document.getElementById('modal-title-text').textContent = '記録する';
+    document.getElementById('modal-category-chip').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
+    document.getElementById('modal-category-chip').style.background = `${cat?.color || '#C0C0C0'}20`;
+    document.getElementById('modal-category-chip').style.color = cat?.color || '#C0C0C0';
+    
     document.getElementById('amount-value').textContent = '0';
     document.getElementById('memo-input').value = '';
     document.getElementById('date-input').value = DB.today();
+    document.getElementById('btn-delete-tx').style.display = 'none';
+    document.getElementById('amount-modal').classList.add('show');
+  }
+
+  function openEditModal(txId) {
+    const all = DB.getTransactions();
+    const tx = all.find(t => t.id === txId);
+    if (!tx) return;
+
+    editingId = txId;
+    inputType = tx.type;
+    selectedCategory = tx.category;
+
+    const allCats = tx.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const cat = allCats[tx.category];
+
+    document.getElementById('modal-title-text').textContent = '修正・編集';
+    document.getElementById('modal-category-chip').textContent = `${cat?.icon || ''} ${cat?.name || tx.category}`;
+    document.getElementById('modal-category-chip').style.background = `${cat?.color || '#C0C0C0'}20`;
+    document.getElementById('modal-category-chip').style.color = cat?.color || '#C0C0C0';
+    document.getElementById('amount-value').textContent = tx.amount.toLocaleString();
+    document.getElementById('memo-input').value = tx.memo || '';
+    document.getElementById('date-input').value = tx.date;
+    document.getElementById('btn-delete-tx').style.display = 'block';
+
     document.getElementById('amount-modal').classList.add('show');
   }
 
@@ -523,9 +558,16 @@ const App = (() => {
       memo: document.getElementById('memo-input').value.trim(),
     };
 
-    DB.addTransaction(tx);
+    if (editingId) {
+      DB.updateTransaction(editingId, tx);
+      showToastMessage('✅', '記録を修正しました');
+    } else {
+      DB.addTransaction(tx);
+      showPositiveToast();
+    }
+    
     closeAmountModal();
-    showPositiveToast();
+    renderAll();
     renderInput();
 
     // 目標進捗チェック（達成時にトースト）
@@ -792,13 +834,100 @@ const App = (() => {
 
     const legend = document.getElementById('pie-legend');
     legend.innerHTML = data.map(d => `
-      <div class="legend-item">
+      <div class="legend-item" onclick="App.showCategoryDetail('${d.key}')">
         <div class="legend-color" style="background:${d.color}"></div>
         <span class="legend-name">${d.icon} ${d.name}</span>
         <span class="legend-amount">${formatMoney(d.amount)}</span>
         <span class="legend-percent">${((d.amount / total) * 100).toFixed(1)}%</span>
       </div>
     `).join('');
+  }
+
+  function showCategoryDetail(catKey) {
+    switchScreen('all-history');
+    renderHistoryList(catKey);
+  }
+
+  function setHistoryViewMode(mode) {
+    historyViewMode = mode;
+    historyWeekOffset = 0;
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-period-${mode}`)?.classList.add('active');
+    renderHistoryList();
+  }
+
+  function changeHistoryPeriod(delta) {
+    if (historyViewMode === 'month') {
+      const parts = currentMonth.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1 + delta, 1);
+      currentMonth = DB.monthKey(d);
+    } else {
+      historyWeekOffset += delta;
+    }
+    renderHistoryList();
+  }
+
+  function getWeekRange(offset = 0) {
+    const now = new Date();
+    const day = now.getDay() || 7; // Monday = 1, Sunday = 7
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - day + 1 + offset * 7);
+    monday.setHours(0, 0, 0, 0);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    
+    return { monday, sunday };
+  }
+
+  function renderHistoryList(filterCat = null) {
+    const container = document.getElementById('all-history-list');
+    const display = document.getElementById('history-period-display');
+    
+    let txs = [];
+    if (historyViewMode === 'month') {
+      const [y, m] = currentMonth.split('-');
+      display.textContent = `${y}年${parseInt(m)}月`;
+      txs = DB.getMonthTransactions(currentMonth);
+    } else {
+      const { monday, sunday } = getWeekRange(historyWeekOffset);
+      const startStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
+      const endStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
+      display.textContent = `${startStr} 〜 ${endStr}`;
+      
+      const all = DB.getTransactions();
+      txs = all.filter(t => {
+        const d = new Date(t.date);
+        return d >= monday && d <= sunday;
+      });
+    }
+
+    if (filterCat) {
+      txs = txs.filter(t => t.category === filterCat);
+    }
+    
+    // 日付順
+    txs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (txs.length === 0) {
+      container.innerHTML = '<div class="empty-message">この期間の記録はありません</div>';
+      return;
+    }
+
+    container.innerHTML = txs.map(t => {
+      const cats = t.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+      const cat = cats[t.category];
+      return `
+        <div class="recent-item" onclick="App.openEditModal('${t.id}')">
+          <div class="recent-icon" style="background:${cat?.color || 'var(--bg)'}20; color:${cat?.color || 'var(--text)'}">${cat?.icon || '📌'}</div>
+          <div class="recent-info">
+            <div class="recent-name">${cat?.name || t.category}</div>
+            <div class="recent-meta">${t.date} ${t.memo ? `· ${t.memo}` : ''}</div>
+          </div>
+          <div class="recent-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatMoney(t.amount)}</div>
+        </div>`;
+    }).join('');
   }
 
   function renderBarChart() {
@@ -1321,6 +1450,29 @@ const App = (() => {
     });
   }
 
+  function renderAll() {
+    renderHome();
+    renderSidejob();
+    renderInput();
+    renderCalendar();
+    renderCharts();
+    renderFixedList();
+    if (currentScreen === 'all-history') renderHistoryList();
+    checkReminder();
+  }
+
+  function confirmDeleteTx() {
+    const idToDelete = editingId;
+    if (!idToDelete) return;
+
+    showConfirm('この記録を削除しますか？', () => {
+      DB.deleteTransaction(idToDelete);
+      closeAmountModal();
+      renderAll();
+      showToastMessage('🗑️', '記録を削除しました');
+    });
+  }
+
   return {
     init,
     switchScreen,
@@ -1353,6 +1505,11 @@ const App = (() => {
     closeCustomCatModal,
     saveCustomCategory,
     confirmDeleteCustomCat,
+    openEditModal,
+    showCategoryDetail,
+    setHistoryViewMode,
+    changeHistoryPeriod,
+    confirmDeleteTx,
   };
 })();
 
