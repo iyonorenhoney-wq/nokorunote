@@ -16,6 +16,9 @@ const DB = (() => {
     beauty_salon:   { name: 'サロン',         parent: '美容費', icon: '💇', color: '#C9B8E8' },
     beauty_home:    { name: 'ホームケア',     parent: '美容費', icon: '💄', color: '#B0A0D8' },
     fixed_rent:     { name: '家賃',           parent: '固定費', icon: '🏠', color: '#8E8E8E' },
+    fixed_electric: { name: '電気代',         parent: '固定費', icon: '⚡', color: '#FFD700' },
+    fixed_gas:      { name: 'ガス代',         parent: '固定費', icon: '🔥', color: '#FF8C00' },
+    fixed_water:    { name: '水道代',         parent: '固定費', icon: '💧', color: '#00BFFF' },
     fixed_utility:  { name: '光熱費',         parent: '固定費', icon: '💡', color: '#A0A0A0' },
     fixed_comm:     { name: '通信費',         parent: '固定費', icon: '📱', color: '#B0B0B0' },
     fixed_insurance:{ name: '保険',           parent: '固定費', icon: '🛡️', color: '#9BB8FF' },
@@ -504,31 +507,39 @@ const DB = (() => {
 
   function saveFixedCosts(list) {
     save(KEY_FIXED, list);
+    // 保存後、当月分を即座にチェック
+    applyMonthlyFixedCosts(monthKey(new Date()));
   }
 
   function applyMonthlyFixedCosts(month) {
-    const applied = load(KEY_FIXED_APPLIED, []);
-    if (applied.includes(month)) return;
-
-    const templates = getFixedCosts().filter(f => f.active);
+    const appliedKeys = load(KEY_FIXED_APPLIED, []); // これまでに適用した（月-インデックス）のリスト
+    const templates = getFixedCosts();
     if (templates.length === 0) return;
 
+    let changed = false;
     const [year, m] = month.split('-').map(Number);
-    templates.forEach(f => {
-      const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(f.day || 1).padStart(2, '0')}`;
-      addTransaction({
-        type: 'expense',
-        amount: f.amount,
-        category: f.category,
-        date: dateStr,
-        isFixed: true,
-        mode: 'family',
-        memo: f.memo || '固定費自動反映'
-      });
+    
+    templates.forEach((f, index) => {
+      const applyKey = `${month}-${index}-${f.amount}-${f.category}`; // 金額やカテゴリが変わった場合も再送できるように一意のキー
+      if (f.active && !appliedKeys.includes(applyKey)) {
+        const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(f.day || 1).padStart(2, '0')}`;
+        addTransaction({
+          type: 'expense',
+          amount: f.amount,
+          category: f.category,
+          date: dateStr,
+          isFixed: true,
+          mode: 'family',
+          memo: f.memo || '固定費自動反映'
+        });
+        appliedKeys.push(applyKey);
+        changed = true;
+      }
     });
 
-    applied.push(month);
-    save(KEY_FIXED_APPLIED, applied);
+    if (changed) {
+      save(KEY_FIXED_APPLIED, appliedKeys);
+    }
   }
 
   function getFixedCostRatio(month) {

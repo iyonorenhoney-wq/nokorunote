@@ -1109,7 +1109,7 @@ html, body {
 .amount-modal-content {
   background: var(--card);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 16px 16px calc(var(--safe-bottom) + 12px);
+  padding: 16px 16px calc(var(--safe-bottom) + 32px);
   width: 100%;
   max-width: 480px;
   animation: slideUp 0.3s ease;
@@ -1197,6 +1197,7 @@ html, body {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-top: 10px;
+  padding-bottom: 20px;
 }
 
 .num-btn {
@@ -1906,7 +1907,7 @@ html, body {
   background: var(--card);
   display: flex;
   justify-content: center;
-  padding-bottom: var(--safe-bottom);
+  padding-bottom: calc(var(--safe-bottom) + 8px);
   box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
   z-index: 100;
   border-top-left-radius: var(--radius-lg);
