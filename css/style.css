@@ -2143,3 +2143,504 @@ body.modal-open #app-header {
   color: var(--primary-dark);
   box-shadow: var(--shadow-sm);
 }
+
+/* =============================================
+   スマホUX 全面改善 v2.0
+   専用入力画面 / クレカ / ナビFAB
+   ============================================= */
+
+/* ===== 専用入力画面 (screen-input-detail) ===== */
+#screen-input-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  /* セーフエリア対応 */
+  padding-top: max(0px, env(safe-area-inset-top));
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+#screen-input-detail.show {
+  display: flex;
+}
+
+/* ヘッダー */
+.idet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 56px;
+  gap: 8px;
+}
+
+.idet-back {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 72px;
+  flex-shrink: 0;
+}
+
+.idet-back:active {
+  background: var(--primary-light);
+  transform: scale(0.95);
+}
+
+.idet-cat-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idet-type-badge {
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  min-width: 44px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.idet-type-badge.income {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* 金額エリア（中央） */
+.idet-amount-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.idet-amount-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--card);
+  border: 2.5px solid var(--primary-light);
+  border-radius: var(--radius-lg);
+  padding: 14px 28px;
+  width: 100%;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.idet-amount-display.has-amount {
+  border-color: var(--primary);
+  box-shadow: 0 4px 20px rgba(248, 164, 184, 0.25);
+}
+
+.idet-yen {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.idet-amount-value {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -2px;
+  min-width: 80px;
+  text-align: right;
+  line-height: 1;
+}
+
+/* 日付・メモ行 */
+.idet-meta-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.idet-meta-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-full);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.idet-meta-btn:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: scale(0.97);
+}
+
+.idet-date-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* メモ展開エリア */
+.idet-memo-expand {
+  width: 100%;
+  display: none;
+  animation: slideDown 0.2s ease;
+}
+
+.idet-memo-expand.show {
+  display: block;
+}
+
+.idet-memo-input {
+  width: 100%;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(248, 164, 184, 0.15);
+}
+
+/* クレカ支払月 */
+.idet-credit-area {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--lavender-light);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  border: 1px solid var(--lavender);
+}
+
+.idet-credit-area.show {
+  display: flex;
+}
+
+.idet-credit-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.idet-pay-month-select {
+  flex: 1;
+  border: 1px solid var(--lavender);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+}
+
+/* 削除ボタン */
+.idet-delete-btn {
+  display: none;
+  width: 100%;
+  border: none;
+  background: var(--danger-light);
+  color: var(--danger);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.idet-delete-btn.show {
+  display: block;
+}
+
+.idet-delete-btn:active {
+  transform: scale(0.97);
+}
+
+/* 決定ボタンエリア */
+.idet-confirm-area {
+  padding: 8px 16px 6px;
+  flex-shrink: 0;
+}
+
+.idet-confirm-btn {
+  width: 100%;
+  background: var(--primary-gradient);
+  color: #FFF;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 17px;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(248, 164, 184, 0.5);
+  transition: all 0.15s;
+  letter-spacing: 1px;
+}
+
+.idet-confirm-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 10px rgba(248, 164, 184, 0.3);
+}
+
+/* テンキー（下部固定・大きめボタン） */
+.idet-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  padding: 8px 12px 14px;
+  flex-shrink: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+
+.idet-numpad .num-btn {
+  padding: 18px 0;
+  font-size: 24px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.08);
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.idet-numpad .num-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  background: var(--primary-light);
+}
+
+.idet-numpad .num-btn.clr {
+  background: #FFEBEF;
+  color: var(--danger);
+  box-shadow: 0 3px 0 #FFD6DE;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.idet-numpad .num-btn.del {
+  background: #FFF5E0;
+  color: #B07030;
+  box-shadow: 0 3px 0 #FFEBBF;
+  font-size: 20px;
+}
+
+.num-spacer {
+  background: transparent;
+  pointer-events: none;
+}
+
+/* デスクトップ対応 */
+@media (min-width: 481px) {
+  #screen-input-detail {
+    max-width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 480px;
+  }
+}
+
+/* ===== クレカサマリーカード ===== */
+.credit-summary-card {
+  background: linear-gradient(135deg, #6B7FD7 0%, #8B9FE8 50%, #9DB0F0 100%);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  color: #FFF;
+  box-shadow: 0 4px 16px rgba(107, 127, 215, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.credit-summary-card::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+.credit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.credit-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0.95;
+}
+
+.credit-card-tag {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.2);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  opacity: 0.85;
+}
+
+.credit-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.credit-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.credit-stat-label {
+  font-size: 10px;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.credit-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.credit-stat-value.accent {
+  font-size: 22px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.credit-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+/* ===== ボトムナビ FABボタン ===== */
+.nav-fab {
+  position: relative;
+  margin-top: -20px;
+}
+
+.nav-fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  color: #FFF;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: 0 4px 16px rgba(248, 164, 184, 0.5);
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.nav-fab:active .nav-fab-icon {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(248, 164, 184, 0.3);
+}
+
+.nav-fab .nav-label {
+  color: var(--primary-dark);
+  font-weight: 800;
+}
+
+/* ===== 入力タイプボタン改善 ===== */
+#btn-expense, #btn-income {
+  font-size: 15px;
+  padding: 12px;
+}
+
+/* ===== カテゴリグリッドのタップ領域拡大 ===== */
+.category-item {
+  padding: 14px 4px;
+  min-height: 72px;
+}
+
+.cat-icon {
+  font-size: 28px;
+}
+
+/* ===== ナビバー（5アイテム対応） ===== */
+.bottom-nav {
+  height: auto;
+}
+
+.nav-item {
+  padding-top: 10px;
+  padding-bottom: 8px;
+}
+
+/* ===== .frequent-badge を非表示（新UIでは不要） ===== */
+.frequent-badge {
+  display: none;
+}

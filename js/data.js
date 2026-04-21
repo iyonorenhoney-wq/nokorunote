@@ -26,6 +26,7 @@ const DB = (() => {
     fixed_sub:      { name: 'サブスク',       parent: '固定費', icon: '📺', color: '#DA70D6' },
     medical:        { name: '医療費',         parent: null,     icon: '🏥', color: '#FF6B6B' },
     sudden:         { name: '突発費',         parent: null,     icon: '⚡', color: '#FF8C00' },
+    credit_card:    { name: 'クレカ支出',     parent: '固定費', icon: '💳', color: '#6B7FD7' },
     other_expense:  { name: 'その他',         parent: null,     icon: '📌', color: '#95A5A6' },
   };
 
@@ -595,6 +596,31 @@ const DB = (() => {
     return proposals[top.key] || { issue: '支出が増えています', action: 'まずは「本当に必要かな？」と自分に問いかけてみて。' };
   }
 
+  // ─── クレカサマリー ───
+  function getCreditSummary(month) {
+    const txs = getTransactions().filter(t => t.category === 'credit_card');
+    // 今月使用額（今月付けのクレカ支出）
+    const currentMonthUsage = txs
+      .filter(t => t.date.startsWith(month))
+      .reduce((s, t) => s + t.amount, 0);
+    // 来月支払予定（payMonth が来月のもの）
+    const [y, m] = month.split('-').map(Number);
+    const nd = new Date(y, m, 1);
+    const nextKey = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}`;
+    const nextMonthPayment = txs
+      .filter(t => t.payMonth === nextKey)
+      .reduce((s, t) => s + t.amount, 0);
+    // 未払い合計（payMonth が設定されていないか今月以降）
+    const unpaid = txs
+      .filter(t => !t.payMonth || t.payMonth >= month)
+      .reduce((s, t) => s + t.amount, 0);
+    return { currentMonthUsage, nextMonthPayment, unpaid };
+  }
+
+  function getHasCreditUsage() {
+    return getTransactions().some(t => t.category === 'credit_card');
+  }
+
   function getGoal() {
     return load(KEY_GOAL, null);
   }
@@ -767,5 +793,7 @@ const DB = (() => {
     getAllExpenseCategories,
     getAllIncomeCategories,
     getFrequentCategories,
+    getCreditSummary,
+    getHasCreditUsage,
   };
 })();

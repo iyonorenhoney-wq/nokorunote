@@ -11,12 +11,18 @@ const App = (() => {
   let selectedCategory = null;
   let sjInputType = null; // sj_income | sj_invest
   let sjSelectedCategory = null;
-  let editingId = null; // 編集中のID
   let selectedDay = DB.today();
   let historyViewMode = 'month'; // month | week
   let historyWeekOffset = 0;
   let pieChart = null;
   let barChart = null;
+
+  // ─── 入力詳細画面用状態 ───
+  let idetSelectedCategory = null;
+  let idetInputType = 'expense';
+  let idetEditingId = null;
+  let idetMemoVisible = false;
+  let idetSelectedDate = null;
 
   // ─── 初期化 ───
   async function init() {
@@ -33,14 +39,11 @@ const App = (() => {
   // ─── iOSキーボード対応 (visualViewport API) ───
   function setupViewportHandler() {
     if (!window.visualViewport) return;
-
-    const modal = document.getElementById('amount-modal');
     const sjModal = document.getElementById('sj-amount-modal');
 
     function adjustModalForKeyboard() {
-      // キーボード表示中、modalの高さをvisualViewportに合わせる
       const vv = window.visualViewport;
-      const modals = [modal, sjModal].filter(m => m && m.classList.contains('show'));
+      const modals = [sjModal].filter(m => m && m.classList.contains('show'));
       modals.forEach(m => {
         m.style.height = vv.height + 'px';
         m.style.top = vv.offsetTop + 'px';
@@ -48,7 +51,7 @@ const App = (() => {
     }
 
     function resetModalSize() {
-      [modal, sjModal].forEach(m => {
+      [sjModal].forEach(m => {
         if (!m) return;
         m.style.height = '';
         m.style.top = '';
@@ -58,12 +61,10 @@ const App = (() => {
     window.visualViewport.addEventListener('resize', adjustModalForKeyboard);
     window.visualViewport.addEventListener('scroll', adjustModalForKeyboard);
 
-    // モーダルが閉じたらリセット
     const observer = new MutationObserver(() => {
-      const anyOpen = [modal, sjModal].some(m => m && m.classList.contains('show'));
+      const anyOpen = [sjModal].some(m => m && m.classList.contains('show'));
       if (!anyOpen) resetModalSize();
     });
-    if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
     if (sjModal) observer.observe(sjModal, { attributes: true, attributeFilter: ['class'] });
   }
 
@@ -241,6 +242,9 @@ const App = (() => {
 
     // リマインド更新
     checkReminder();
+
+    // クレカサマリー更新
+    renderCreditSummary();
   }
 
   function renderActionAndGoal() {
@@ -500,46 +504,11 @@ const App = (() => {
 
   function selectCategory(catKey) {
     selectedCategory = catKey;
-    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
-    const cat = allCats[catKey];
-    
-    editingId = null;
-    document.getElementById('modal-title-text').textContent = '記録する';
-    document.getElementById('modal-category-chip').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
-    document.getElementById('modal-category-chip').style.background = `${cat?.color || '#C0C0C0'}20`;
-    document.getElementById('modal-category-chip').style.color = cat?.color || '#C0C0C0';
-    
-    document.getElementById('amount-value').textContent = '0';
-    document.getElementById('memo-input').value = '';
-    document.getElementById('date-input').value = DB.today();
-    document.getElementById('btn-delete-tx').style.display = 'none';
-    document.getElementById('amount-modal').classList.add('show');
-    document.body.classList.add('modal-open');
+    openInputDetail(catKey);
   }
 
   function openEditModal(txId) {
-    const all = DB.getTransactions();
-    const tx = all.find(t => t.id === txId);
-    if (!tx) return;
-
-    editingId = txId;
-    inputType = tx.type;
-    selectedCategory = tx.category;
-
-    const allCats = tx.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
-    const cat = allCats[tx.category];
-
-    document.getElementById('modal-title-text').textContent = '修正・編集';
-    document.getElementById('modal-category-chip').textContent = `${cat?.icon || ''} ${cat?.name || tx.category}`;
-    document.getElementById('modal-category-chip').style.background = `${cat?.color || '#C0C0C0'}20`;
-    document.getElementById('modal-category-chip').style.color = cat?.color || '#C0C0C0';
-    document.getElementById('amount-value').textContent = tx.amount.toLocaleString();
-    document.getElementById('memo-input').value = tx.memo || '';
-    document.getElementById('date-input').value = tx.date;
-    document.getElementById('btn-delete-tx').style.display = 'block';
-
-    document.getElementById('amount-modal').classList.add('show');
-    document.body.classList.add('modal-open');
+    openEditViaInputDetail(txId);
   }
 
   function quickInput(index) {
@@ -548,14 +517,17 @@ const App = (() => {
     const h = filtered[index];
     if (!h) return;
     selectedCategory = h.category;
-    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
-    const cat = allCats[h.category];
-    document.getElementById('modal-category').textContent = `${cat?.icon || ''} ${cat?.name || ''}`;
-    document.getElementById('amount-value').textContent = h.amount.toLocaleString();
-    document.getElementById('memo-input').value = h.memo || '';
-    document.getElementById('date-input').value = DB.today();
-    document.getElementById('amount-modal').classList.add('show');
-    document.body.classList.add('modal-open');
+    openInputDetail(h.category);
+    // 履歴の金額・メモを事先セット
+    setTimeout(() => {
+      const amtEl = document.getElementById('idet-amount-value');
+      if (amtEl) amtEl.textContent = h.amount.toLocaleString();
+      updateIdetAmountStyle();
+      if (h.memo) {
+        document.getElementById('idet-memo-input').value = h.memo;
+        document.getElementById('idet-memo-display').textContent = h.memo;
+      }
+    }, 0);
   }
 
   function handleNumpad(num) {
@@ -589,58 +561,68 @@ const App = (() => {
   }
 
   function saveTransaction() {
-    const amount = parseInt(document.getElementById('amount-value').textContent.replace(/,/g, ''));
-    if (!amount || amount <= 0) return;
+    const amtEl = document.getElementById('idet-amount-value');
+    const amount = parseInt((amtEl?.textContent || '0').replace(/,/g, ''));
+    if (!amount || amount <= 0) {
+      // 金額0のときバイブレーションフィードバック
+      const display = document.getElementById('idet-amount-display');
+      if (display) {
+        display.style.borderColor = 'var(--danger)';
+        display.style.boxShadow = '0 0 0 3px rgba(255,123,123,0.25)';
+        setTimeout(() => {
+          display.style.borderColor = '';
+          display.style.boxShadow = '';
+        }, 600);
+      }
+      return;
+    }
+
+    const memo = (document.getElementById('idet-memo-input')?.value || '').trim();
+    const payMonth = idetSelectedCategory === 'credit_card'
+      ? document.getElementById('idet-pay-month')?.value
+      : undefined;
 
     const tx = {
-      date: document.getElementById('date-input').value || DB.today(),
-      type: inputType,
-      category: selectedCategory,
-      amount: amount,
-      memo: document.getElementById('memo-input').value.trim(),
+      date: idetSelectedDate || DB.today(),
+      type: idetInputType,
+      category: idetSelectedCategory,
+      amount,
+      memo,
     };
+    if (payMonth) tx.payMonth = payMonth;
 
-    if (editingId) {
-      DB.updateTransaction(editingId, tx);
+    if (idetEditingId) {
+      DB.updateTransaction(idetEditingId, tx);
       showToastMessage('✅', '記録を修正しました');
     } else {
       DB.addTransaction(tx);
       showPositiveToast();
     }
-    
-    closeAmountModal();
+
+    closeInputDetail();
     renderAll();
     renderInput();
 
-    // 目標進捗チェック（達成時にトースト）
+    // 目標達成チェック
     const goal = DB.getGoalProgress(currentMonth);
     if (goal && goal.isSuccess && goal.current === goal.limit) {
       setTimeout(showGoalSuccessToast, 1500);
     }
 
     // 予算警告チェック
-    if (inputType === 'expense') {
-      const remaining = DB.getRemainingBudget(DB.monthKey(new Date(tx.date)), selectedCategory);
+    if (idetInputType === 'expense') {
+      const remaining = DB.getRemainingBudget(DB.monthKey(new Date(tx.date)), idetSelectedCategory);
       if (remaining !== null && remaining < 0) {
-        setTimeout(() => {
-          showToastMessage('⚠️', '予算をオーバーしました💦');
-        }, 2000);
+        setTimeout(() => showToastMessage('⚠️', '予算をオーバーしました💦'), 2000);
       } else if (remaining !== null && remaining >= 0 && remaining < 1000) {
-        setTimeout(() => {
-          showToastMessage('💪', 'あと少しで予算内！がんばれ！');
-        }, 2000);
+        setTimeout(() => showToastMessage('💪', 'あと少しで予算内！がんばれ！'), 2000);
       }
     }
   }
 
   function closeAmountModal() {
-    // キーボードを確実に閉じる（iOSでactiveElement.blurが必要）
-    if (document.activeElement && document.activeElement.blur) {
-      document.activeElement.blur();
-    }
-    document.getElementById('amount-modal').classList.remove('show');
-    document.body.classList.remove('modal-open');
-    selectedCategory = null;
+    // 専用入力画面に置き換えたため、closeInputDetailに委譲
+    closeInputDetail();
   }
 
 
@@ -1168,6 +1150,9 @@ const App = (() => {
         </div>
       </div>
     `).join('');
+
+    // 定期代リストも更新
+    renderFixedList();
   }
 
   function onBudgetChange(catKey, value) {
@@ -1217,10 +1202,19 @@ const App = (() => {
   }
 
   // ─── 削除 ───
-  function confirmDeleteTx(id) {
+  /**
+   * 予算（記録）の削除。
+   * @param {string} [idArg] - 履歴リストなどから直接IDを渡す場合。
+   *   省略時は入力画面から呼び出したとみなし、idetEditingIdを使用。
+   */
+  function confirmDeleteTx(idArg) {
+    const idToDelete = idArg || idetEditingId;
+    if (!idToDelete) return;
     showConfirm('この記録を削除しますか？', () => {
-      DB.deleteTransaction(id);
-      renderHome();
+      DB.deleteTransaction(idToDelete);
+      if (!idArg) closeInputDetail();
+      renderAll();
+      showToastMessage('🗑️', '記録を削除しました');
     });
   }
 
@@ -1290,15 +1284,6 @@ const App = (() => {
     document.querySelectorAll('.type-btn').forEach(btn => {
       btn.addEventListener('click', () => setInputType(btn.dataset.type));
     });
-
-    // テンキー
-    document.querySelectorAll('#amount-modal .num-btn').forEach(btn => {
-      btn.addEventListener('click', () => handleNumpad(btn.dataset.num));
-    });
-
-    // 金額モーダル
-    document.getElementById('modal-close').addEventListener('click', closeAmountModal);
-    document.getElementById('modal-done').addEventListener('click', saveTransaction);
 
     // 副業ボタン
     document.getElementById('sj-add-income').addEventListener('click', () => openSjInput('sj_income'));
@@ -1514,16 +1499,239 @@ const App = (() => {
     checkReminder();
   }
 
-  function confirmDeleteTx() {
-    const idToDelete = editingId;
-    if (!idToDelete) return;
+  // ─── 🆕 専用入力画面 (screen-input-detail) ───
 
-    showConfirm('この記録を削除しますか？', () => {
-      DB.deleteTransaction(idToDelete);
-      closeAmountModal();
-      renderAll();
-      showToastMessage('🗑️', '記録を削除しました');
-    });
+  function openInputDetail(catKey) {
+    idetSelectedCategory = catKey;
+    idetInputType = inputType;
+    idetEditingId = null;
+
+    const allCats = inputType === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const cat = allCats[catKey];
+
+    // ヘッダー設定
+    document.getElementById('idet-cat-name').textContent =
+      cat ? `${cat.icon} ${cat.name}` : catKey;
+    const badge = document.getElementById('idet-type-badge');
+    badge.textContent = inputType === 'expense' ? '支出' : '収入';
+    badge.className = `idet-type-badge${inputType === 'income' ? ' income' : ''}`;
+
+    // 金額リセット
+    document.getElementById('idet-amount-value').textContent = '0';
+    updateIdetAmountStyle();
+
+    // 日付リセット（今日）
+    idetSelectedDate = DB.today();
+    updateIdetDateDisplay();
+
+    // メモリセット
+    document.getElementById('idet-memo-input').value = '';
+    document.getElementById('idet-memo-display').textContent = 'メモ';
+    document.getElementById('idet-memo-expand').classList.remove('show');
+    idetMemoVisible = false;
+
+    // クレカ支払月
+    const creditArea = document.getElementById('idet-credit-area');
+    if (catKey === 'credit_card') {
+      creditArea.classList.add('show');
+      populateCreditMonths();
+    } else {
+      creditArea.classList.remove('show');
+    }
+
+    // 削除ボタン非表示
+    document.getElementById('idet-delete-btn').classList.remove('show');
+
+    // 画面表示
+    document.getElementById('screen-input-detail').classList.add('show');
+  }
+
+  function openEditViaInputDetail(txId) {
+    const all = DB.getTransactions();
+    const tx = all.find(t => t.id === txId);
+    if (!tx) return;
+
+    idetEditingId = txId;
+    idetInputType = tx.type;
+    idetSelectedCategory = tx.category;
+
+    const allCats = tx.type === 'expense' ? DB.getAllExpenseCategories() : DB.getAllIncomeCategories();
+    const cat = allCats[tx.category];
+
+    // ヘッダー
+    document.getElementById('idet-cat-name').textContent =
+      cat ? `${cat.icon} ${cat.name}` : tx.category;
+    const badge = document.getElementById('idet-type-badge');
+    badge.textContent = tx.type === 'expense' ? '支出' : '収入';
+    badge.className = `idet-type-badge${tx.type === 'income' ? ' income' : ''}`;
+
+    // 金額
+    document.getElementById('idet-amount-value').textContent = tx.amount.toLocaleString();
+    updateIdetAmountStyle();
+
+    // 日付
+    idetSelectedDate = tx.date;
+    updateIdetDateDisplay();
+
+    // メモ
+    const memo = tx.memo || '';
+    document.getElementById('idet-memo-input').value = memo;
+    document.getElementById('idet-memo-display').textContent = memo || 'メモ';
+    document.getElementById('idet-memo-expand').classList.remove('show');
+    idetMemoVisible = false;
+
+    // クレカ
+    const creditArea = document.getElementById('idet-credit-area');
+    if (tx.category === 'credit_card') {
+      creditArea.classList.add('show');
+      populateCreditMonths();
+      if (tx.payMonth) {
+        setTimeout(() => {
+          document.getElementById('idet-pay-month').value = tx.payMonth;
+        }, 0);
+      }
+    } else {
+      creditArea.classList.remove('show');
+    }
+
+    // 削除ボタン表示
+    document.getElementById('idet-delete-btn').classList.add('show');
+
+    // 画面表示
+    document.getElementById('screen-input-detail').classList.add('show');
+  }
+
+  function closeInputDetail() {
+    document.getElementById('screen-input-detail').classList.remove('show');
+    idetEditingId = null;
+    idetSelectedCategory = null;
+    idetMemoVisible = false;
+  }
+
+  function handleDetailNumpad(num) {
+    const el = document.getElementById('idet-amount-value');
+    let val = el.textContent.replace(/,/g, '');
+    if (num === 'del') {
+      val = val.length > 1 ? val.slice(0, -1) : '0';
+    } else if (num === 'clr') {
+      val = '0';
+    } else {
+      if (val === '0') val = '';
+      val += num;
+      if (parseInt(val) > 9999999) return; // 上限
+    }
+    el.textContent = parseInt(val || '0').toLocaleString();
+    updateIdetAmountStyle();
+  }
+
+  function updateIdetAmountStyle() {
+    const el = document.getElementById('idet-amount-value');
+    const display = document.getElementById('idet-amount-display');
+    if (!el || !display) return;
+    const val = parseInt(el.textContent.replace(/,/g, ''));
+    if (val > 0) {
+      display.classList.add('has-amount');
+    } else {
+      display.classList.remove('has-amount');
+    }
+  }
+
+  function updateIdetDateDisplay() {
+    const today = DB.today();
+    let displayText;
+    if (!idetSelectedDate || idetSelectedDate === today) {
+      displayText = '今日';
+    } else {
+      const d = new Date(idetSelectedDate + 'T00:00:00');
+      displayText = `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+    document.getElementById('idet-date-display').textContent = displayText;
+    const inp = document.getElementById('idet-date-input');
+    if (inp) inp.value = idetSelectedDate || today;
+  }
+
+  function triggerDatePicker() {
+    const inp = document.getElementById('idet-date-input');
+    if (!inp) return;
+    inp.value = idetSelectedDate || DB.today();
+    try {
+      if (inp.showPicker) {
+        inp.showPicker();
+      } else {
+        inp.click();
+      }
+    } catch (e) {
+      inp.click();
+    }
+  }
+
+  function onIdetDateChange() {
+    const val = document.getElementById('idet-date-input')?.value;
+    if (val) {
+      idetSelectedDate = val;
+      updateIdetDateDisplay();
+    }
+  }
+
+  function toggleIdetMemo() {
+    idetMemoVisible = !idetMemoVisible;
+    const area = document.getElementById('idet-memo-expand');
+    if (idetMemoVisible) {
+      area.classList.add('show');
+      setTimeout(() => document.getElementById('idet-memo-input')?.focus(), 80);
+    } else {
+      area.classList.remove('show');
+    }
+  }
+
+  function onIdetMemoBlur() {
+    const val = (document.getElementById('idet-memo-input')?.value || '').trim();
+    document.getElementById('idet-memo-display').textContent = val || 'メモ';
+    if (!val) {
+      setTimeout(() => {
+        document.getElementById('idet-memo-expand').classList.remove('show');
+        idetMemoVisible = false;
+      }, 100);
+    }
+  }
+
+  function populateCreditMonths() {
+    const sel = document.getElementById('idet-pay-month');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const now = new Date();
+    for (let i = 0; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = i === 0 ? `${d.getMonth() + 1}月（今月）` : `${d.getMonth() + 1}月`;
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = label;
+      if (i === 1) opt.selected = true; // デフォルト：来月
+      sel.appendChild(opt);
+    }
+  }
+
+  function renderCreditSummary() {
+    const card = document.getElementById('credit-summary-card');
+    if (!card) return;
+    // クレカ支出がなければ非表示
+    if (!DB.getHasCreditUsage()) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    const summary = DB.getCreditSummary(currentMonth);
+    const thisMonthEl = document.getElementById('credit-this-month');
+    const nextMonthEl = document.getElementById('credit-next-month');
+    if (thisMonthEl) thisMonthEl.textContent = formatMoney(summary.currentMonthUsage);
+    if (nextMonthEl) nextMonthEl.textContent = formatMoney(summary.nextMonthPayment);
+  }
+
+  // ─── 🆕 金額フォーマット ───
+  function formatMoney(n) {
+    if (n === 0) return '¥0';
+    return '¥' + n.toLocaleString();
   }
 
   return {
@@ -1543,6 +1751,7 @@ const App = (() => {
     changeMonth,
     switchChartTab,
     openGoalModal,
+    closeGoalModal,
     resetGoal,
     confirmDeleteTx,
     confirmDeleteSj,
@@ -1562,7 +1771,15 @@ const App = (() => {
     showCategoryDetail,
     setHistoryViewMode,
     changeHistoryPeriod,
-    confirmDeleteTx,
+    onBudgetChange,
+    // 🆕 専用入力画面
+    openInputDetail,
+    closeInputDetail,
+    handleDetailNumpad,
+    triggerDatePicker,
+    onIdetDateChange,
+    toggleIdetMemo,
+    onIdetMemoBlur,
   };
 })();
 

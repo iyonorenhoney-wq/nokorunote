@@ -84,6 +84,25 @@
           </div>
         </div>
 
+        <!-- クレカサマリーカード -->
+        <div class="credit-summary-card" id="credit-summary-card" style="display:none;">
+          <div class="credit-card-header">
+            <span class="credit-card-title">💳 クレカ管理</span>
+            <span class="credit-card-tag">外部連携なし・安全</span>
+          </div>
+          <div class="credit-card-stats">
+            <div class="credit-stat-item">
+              <span class="credit-stat-label">今月使用</span>
+              <span class="credit-stat-value" id="credit-this-month">¥0</span>
+            </div>
+            <div class="credit-stat-divider"></div>
+            <div class="credit-stat-item">
+              <span class="credit-stat-label">来月支払予定</span>
+              <span class="credit-stat-value accent" id="credit-next-month">¥0</span>
+            </div>
+          </div>
+        </div>
+
         <!-- アクションカード -->
         <div class="action-card" id="home-action-card" style="display:none;">
           <div class="action-card-badge">今月のミッション</div>
@@ -130,16 +149,6 @@
           <div class="ds-info">
             今月は <strong id="home-success-days">0</strong> / <span id="home-total-days">0</span> 日 予算内です✨
           </div>
-        </div>
-
-        <!-- 連続記録カード（詳細表示） -->
-        <div class="streak-card" id="streak-card" style="display:none;">
-          <div class="streak-icon">🔥</div>
-          <div class="streak-info">
-            <span class="streak-count" id="streak-count">0</span>
-            <span class="streak-label">日連続記録中！</span>
-          </div>
-          <div class="streak-message" id="streak-message">今日も記録しよう！</div>
         </div>
 
         <!-- 予算プログレス -->
@@ -205,18 +214,18 @@
       </div>
     </section>
 
-    <!-- ===== 入力画面 ===== -->
+    <!-- ===== 入力画面（カテゴリ選択） ===== -->
     <section class="screen" id="screen-input">
       <div class="screen-content">
         <!-- 支出/収入切り替え -->
         <div class="input-type-toggle">
-          <button class="type-btn active" data-type="expense" id="btn-expense">支出</button>
-          <button class="type-btn" data-type="income" id="btn-income">収入</button>
+          <button class="type-btn active" data-type="expense" id="btn-expense">💸 支出</button>
+          <button class="type-btn" data-type="income" id="btn-income">💰 収入</button>
         </div>
 
-        <!-- クイック入力 -->
+        <!-- 履歴クイック入力 -->
         <div class="quick-input-section" id="quick-input-section">
-          <div class="section-title">よく使う項目</div>
+          <div class="section-title">履歴から選択</div>
           <div class="quick-items" id="quick-items">
             <!-- JS生成 -->
           </div>
@@ -226,41 +235,6 @@
         <div class="section-title" id="category-section-title">カテゴリを選択</div>
         <div class="category-grid" id="category-grid">
           <!-- JS生成 -->
-        </div>
-
-        <!-- 金額入力モーダル -->
-        <div class="amount-modal" id="amount-modal">
-          <div class="amount-modal-content">
-            <div class="modal-header">
-              <button class="modal-close" id="modal-close"></button>
-              <span class="modal-category" id="modal-title-text">記録する</span>
-              <button class="modal-done" id="modal-done">保存</button>
-            </div>
-            <div class="edit-category-chip" id="modal-category-chip">食材</div>
-            <div class="amount-display">
-              <span class="amount-yen">¥</span>
-              <span class="amount-value" id="amount-value">0</span>
-            </div>
-            <input type="text" class="memo-input" id="memo-input" placeholder="メモ（任意）">
-            <input type="date" class="date-input" id="date-input">
-            <button class="action-btn danger full" id="btn-delete-tx" style="display:none; margin-bottom:12px;" onclick="App.confirmDeleteTx()">この記録を削除する</button>
-            <div class="numpad">
-              <button class="num-btn clr" data-num="clr">C</button>
-              <button class="num-btn del" data-num="del">⌫</button>
-              <button class="num-btn" data-num="1">1</button>
-              <button class="num-btn" data-num="2">2</button>
-              <button class="num-btn" data-num="3">3</button>
-              <button class="num-btn" data-num="4">4</button>
-              <button class="num-btn" data-num="5">5</button>
-              <button class="num-btn" data-num="6">6</button>
-              <button class="num-btn" data-num="7">7</button>
-              <button class="num-btn" data-num="8">8</button>
-              <button class="num-btn" data-num="9">9</button>
-              <button class="num-btn" data-num="00">00</button>
-              <button class="num-btn" data-num="0">0</button>
-              <button class="num-btn" data-num="000">000</button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -343,6 +317,16 @@
           </div>
         </div>
 
+        <!-- 固定費管理（設定内に統合） -->
+        <div class="settings-group">
+          <div class="settings-title">固定費管理</div>
+          <p class="section-desc">毎月自動で反映される支出（家賃・サブスクなど）を登録</p>
+          <div class="fixed-list" id="fixed-list"></div>
+          <button class="add-fixed-btn" onclick="App.openFixedModal()">
+            <span>＋ 固定費を追加する</span>
+          </button>
+        </div>
+
         <div class="settings-group">
           <div class="settings-title">データ管理</div>
           <button class="settings-btn" id="btn-export-csv">
@@ -363,7 +347,7 @@
         <div class="settings-group">
           <div class="settings-title">アプリについて</div>
           <div class="about-text">
-            <p>かけいぼ v1.0</p>
+            <p>かけいぼ v2.0</p>
             <p>育児家庭のためのシンプル家計簿</p>
           </div>
         </div>
@@ -423,27 +407,24 @@
       </div>
     </div>
 
-    <!-- ===== ボトムナビ ===== -->
+    <!-- ===== ボトムナビ（5アイテム） ===== -->
     <nav class="bottom-nav" id="bottom-nav">
       <button class="nav-item active" data-screen="home" id="nav-home">
         <span class="nav-icon">🏠</span>
         <span class="nav-label">ホーム</span>
       </button>
-      <button class="nav-item" data-screen="input" id="nav-input">
-        <span class="nav-icon">✏️</span>
-        <span class="nav-label">入力</span>
-      </button>
       <button class="nav-item" data-screen="calendar" id="nav-calendar">
         <span class="nav-icon">📅</span>
-        <span class="nav-label">カレンダー</span>
+        <span class="nav-label">履歴</span>
+      </button>
+      <!-- 中央入力FABボタン -->
+      <button class="nav-item nav-fab" data-screen="input" id="nav-input">
+        <span class="nav-fab-icon">＋</span>
+        <span class="nav-label">入力</span>
       </button>
       <button class="nav-item" data-screen="chart" id="nav-chart">
         <span class="nav-icon">📊</span>
         <span class="nav-label">グラフ</span>
-      </button>
-      <button class="nav-item" data-screen="fixed" id="nav-fixed">
-        <span class="nav-icon">🏠</span>
-        <span class="nav-label">固定費</span>
       </button>
       <button class="nav-item" data-screen="settings" id="nav-settings">
         <span class="nav-icon">⚙️</span>
@@ -452,12 +433,86 @@
     </nav>
   </div>
 
+  <!-- ===== 専用入力画面（全画面テンキーUI） ===== -->
+  <!-- #app の外側に置くことで position:fixed が正しく機能する -->
+  <div id="screen-input-detail">
+    <!-- 戻るボタン＋カテゴリ名ヘッダー -->
+    <div class="idet-header">
+      <button class="idet-back" onclick="App.closeInputDetail()">‹ 戻る</button>
+      <span class="idet-cat-name" id="idet-cat-name">外食</span>
+      <div class="idet-type-badge" id="idet-type-badge">支出</div>
+    </div>
+
+    <!-- 金額表示エリア -->
+    <div class="idet-amount-area">
+      <div class="idet-amount-display" id="idet-amount-display">
+        <span class="idet-yen">¥</span>
+        <span class="idet-amount-value" id="idet-amount-value">0</span>
+      </div>
+
+      <!-- 日付・メモ行 -->
+      <div class="idet-meta-row">
+        <button class="idet-meta-btn" id="idet-date-btn" onclick="App.triggerDatePicker()">
+          📅 <span id="idet-date-display">今日</span>
+        </button>
+        <input type="date" id="idet-date-input" class="idet-date-hidden" onchange="App.onIdetDateChange()">
+        <button class="idet-meta-btn" id="idet-memo-btn" onclick="App.toggleIdetMemo()">
+          📝 <span id="idet-memo-display">メモ</span>
+        </button>
+      </div>
+
+      <!-- メモ展開エリア（タップ時表示） -->
+      <div class="idet-memo-expand" id="idet-memo-expand">
+        <input type="text" id="idet-memo-input" class="idet-memo-input"
+               placeholder="メモを入力（任意、例：コンビニ）" maxlength="30"
+               onblur="App.onIdetMemoBlur()">
+      </div>
+
+      <!-- クレカ支払月（クレカカテゴリのみ表示） -->
+      <div class="idet-credit-area" id="idet-credit-area">
+        <span class="idet-credit-label">💳 支払月：</span>
+        <select id="idet-pay-month" class="idet-pay-month-select"></select>
+      </div>
+
+      <!-- 削除ボタン（編集時のみ表示） -->
+      <button class="idet-delete-btn" id="idet-delete-btn" onclick="App.confirmDeleteTx()">
+        🗑️ この記録を削除する
+      </button>
+    </div>
+
+    <!-- 決定ボタン -->
+    <div class="idet-confirm-area">
+      <button class="idet-confirm-btn" onclick="App.saveTransaction()">
+        ✅ 決定する
+      </button>
+    </div>
+
+    <!-- テンキー（画面下部） -->
+    <div class="idet-numpad">
+      <button class="num-btn clr" onclick="App.handleDetailNumpad('clr')">C</button>
+      <button class="num-btn del" onclick="App.handleDetailNumpad('del')">⌫</button>
+      <div class="num-spacer"></div>
+      <button class="num-btn" onclick="App.handleDetailNumpad('7')">7</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('8')">8</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('9')">9</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('4')">4</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('5')">5</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('6')">6</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('1')">1</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('2')">2</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('3')">3</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('00')">00</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('0')">0</button>
+      <button class="num-btn" onclick="App.handleDetailNumpad('000')">000</button>
+    </div>
+  </div>
+
   <!-- 目標設定モーダル -->
   <div class="modal" id="goal-modal">
     <div class="modal-content side-up">
       <h3 class="modal-title">目標をセットする</h3>
       <p class="modal-subtitle">無理のない範囲で決めてみましょう♪</p>
-      
+
       <div class="goal-options">
         <button class="goal-option-btn" data-goal="eat_out_limit">
           <span class="g-opt-icon">🍽️</span>
@@ -541,20 +596,6 @@
       <div id="all-history-list" class="recent-list">
         <!-- JS生成 -->
       </div>
-    </div>
-  </div>
-
-  <!-- 固定費画面 (追加) -->
-  <div class="screen" id="screen-fixed">
-    <div class="screen-content">
-      <h3 class="section-title">固定費テンプレート</h3>
-      <p class="section-desc">毎月自動で反映される支出を管理します。</p>
-      <div class="fixed-list" id="fixed-list">
-        <!-- JSで描画 -->
-      </div>
-      <button class="add-fixed-btn" onclick="App.openFixedModal()">
-        <span>＋ 固定費を追加する</span>
-      </button>
     </div>
   </div>
 
