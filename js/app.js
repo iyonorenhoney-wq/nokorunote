@@ -1665,6 +1665,11 @@ const App = (() => {
     }
   }
 
+  // 日付inputのonfocusから呼ばれる—現在選択日付を返す
+  function getIdetDate() {
+    return idetSelectedDate || DB.today();
+  }
+
   function onIdetDateChange() {
     const val = document.getElementById('idet-date-input')?.value;
     if (val) {
@@ -1780,6 +1785,7 @@ const App = (() => {
     onIdetDateChange,
     toggleIdetMemo,
     onIdetMemoBlur,
+    getIdetDate,
   };
 })();
 

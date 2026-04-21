@@ -26,7 +26,7 @@ const DB = (() => {
     fixed_sub:      { name: 'サブスク',       parent: '固定費', icon: '📺', color: '#DA70D6' },
     medical:        { name: '医療費',         parent: null,     icon: '🏥', color: '#FF6B6B' },
     sudden:         { name: '突発費',         parent: null,     icon: '⚡', color: '#FF8C00' },
-    credit_card:    { name: 'クレカ支出',     parent: '固定費', icon: '💳', color: '#6B7FD7' },
+    credit_card:    { name: 'クレカ支出',     parent: null,     icon: '💳', color: '#6B7FD7' },
     other_expense:  { name: 'その他',         parent: null,     icon: '📌', color: '#95A5A6' },
   };
 

@@ -452,10 +452,15 @@
 
       <!-- 日付・メモ行 -->
       <div class="idet-meta-row">
-        <button class="idet-meta-btn" id="idet-date-btn" onclick="App.triggerDatePicker()">
-          📅 <span id="idet-date-display">今日</span>
-        </button>
-        <input type="date" id="idet-date-input" class="idet-date-hidden" onchange="App.onIdetDateChange()">
+        <!-- 日付：透明inputオーバーレイ方式でネイティブカレンダーを開く -->
+        <div class="idet-date-wrapper">
+          <button class="idet-meta-btn" id="idet-date-btn">
+            📅 <span id="idet-date-display">今日</span>
+          </button>
+          <input type="date" id="idet-date-input" class="idet-date-overlay"
+                 onfocus="this.value = App.getIdetDate()"
+                 onchange="App.onIdetDateChange()">
+        </div>
         <button class="idet-meta-btn" id="idet-memo-btn" onclick="App.toggleIdetMemo()">
           📝 <span id="idet-memo-display">メモ</span>
         </button>
