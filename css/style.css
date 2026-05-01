@@ -1106,7 +1106,180 @@ body.modal-open {
   color: var(--text-light);
 }
 
+/* --- モーダル共通 (.modal / .modal-content.side-up) --- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.modal.show {
+  display: flex;
+  animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: var(--card);
+  width: 100%;
+  max-width: 480px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 28px 20px 40px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-content.side-up {
+  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-light);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* フォームグループ（モーダル内） */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"] {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  border-color: var(--primary);
+  background: #FFF;
+}
+
+/* 目標モーダル */
+.goal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.goal-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.goal-option-btn:active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: scale(0.97);
+}
+
+.g-opt-icon { font-size: 24px; }
+.g-opt-name { flex: 1; }
+
+.gs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.gs-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gs-input-group input {
+  width: 80px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+}
+
+.gs-input-group input:focus { border-color: var(--primary); }
+
+/* 削除ボタン（設定→カスタムカテゴリ） */
+.delete-custom-btn {
+  border: none;
+  background: var(--danger-light);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.delete-custom-btn:active { transform: scale(0.92); }
+
 /* --- 金額入力モーダル --- */
+
 /* モーダルは #app の外側に出し、viewport 全体をおおうよう position:fixed+inset:0 で管理 */
 .amount-modal {
   position: fixed;
@@ -2668,3 +2841,236 @@ body.modal-open #app-header {
 .frequent-badge {
   display: none;
 }
+
+/* ===== カスタムカテゴリ追加モーダル ===== */
+.custom-cat-modal-content {
+  padding-bottom: 32px !important;
+}
+
+/* 種類トグル */
+.cc-type-toggle {
+  display: flex;
+  background: var(--bg);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.cc-type-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-full);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cc-type-btn.active {
+  background: #FFF;
+  color: var(--primary-dark);
+  box-shadow: 0 3px 10px rgba(248, 164, 184, 0.25);
+}
+
+.cc-type-btn[data-type="income"].active {
+  color: var(--accent-dark);
+  box-shadow: 0 3px 10px rgba(126, 200, 176, 0.25);
+}
+
+/* フォームラベル */
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.required-badge {
+  background: var(--primary);
+  color: #FFF;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+}
+
+.form-input {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  background: #FFF;
+  box-shadow: 0 0 0 3px rgba(248, 164, 184, 0.15);
+}
+
+/* アイコンエリア */
+.cc-icon-area {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cc-icon-preview {
+  width: 52px;
+  height: 52px;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.cc-emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.cc-emoji-btn {
+  width: 38px;
+  height: 38px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.cc-emoji-btn:active {
+  transform: scale(0.88);
+}
+
+.cc-emoji-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(248, 164, 184, 0.35);
+}
+
+.cc-icon-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 20px;
+  text-align: center;
+  background: var(--bg);
+  font-family: var(--font);
+  outline: none;
+  color: var(--text);
+}
+
+.cc-icon-input::placeholder {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cc-icon-input:focus {
+  border-color: var(--primary);
+  background: #FFF;
+}
+
+/* カラーグリッド */
+.cc-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cc-color-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  outline: none;
+  padding: 0;
+}
+
+.cc-color-swatch:active {
+  transform: scale(0.88);
+}
+
+.cc-color-swatch.active {
+  border-color: var(--text);
+  transform: scale(1.15);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+/* アクションボタン */
+.cc-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.cc-cancel-btn {
+  flex: 1;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius-full);
+  padding: 14px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cc-cancel-btn:active {
+  background: var(--border);
+  color: var(--text);
+}
+
+.cc-save-btn {
+  flex: 2;
+  border: none;
+  background: var(--primary-gradient);
+  border-radius: var(--radius-full);
+  padding: 14px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  color: #FFF;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(248, 164, 184, 0.4);
+  transition: all 0.2s;
+}
+
+.cc-save-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(248, 164, 184, 0.3);
+}
+

@@ -1328,6 +1328,24 @@ const App = (() => {
       const btn = e.target.closest('.mode-btn');
       if (btn) switchMode(btn.dataset.mode);
     });
+
+    // .modal オーバーレイクリックで閉じる
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('show');
+        }
+      });
+    });
+
+    // カスタムカテゴリ種類切り替え
+    document.getElementById('cc-type-toggle')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.cc-type-btn');
+      if (btn && btn.dataset.type) setCcType(btn.dataset.type);
+    });
+
+    // カスタムカテゴリ保存ボタン（念のため追加）
+    document.getElementById('cc-save-btn')?.addEventListener('click', saveCustomCategory);
   }
 
   // ─── 固定費管理 ───
@@ -1453,10 +1471,116 @@ const App = (() => {
   }
 
   // ─── カスタムカテゴリ ───
+  // モーダル内の状態
+  let ccSelectedColor = '#F8A4B8';
+  let ccSelectedIcon = '📌';
+  let ccSelectedType = 'expense';
+
+  const CC_COLORS = [
+    '#F8A4B8', '#FFB8C9', '#FF8C69', '#FFD4A0', '#FFE082',
+    '#A5D6A7', '#7EC8B0', '#80DEEA', '#A0D2F0', '#81D4FA',
+    '#C9B8E8', '#CE93D8', '#F48FB1', '#B0BEC5', '#90A4AE',
+    '#FF7B7B', '#FF8C00', '#B38B6D', '#7BB8DF', '#5DAF96',
+  ];
+
+  const CC_EMOJIS_EXPENSE = [
+    '🛒','🍱','🍽️','🍜','☕','🥦','🧴','💊','👶','🎹',
+    '📚','🎮','🚗','✈️','💇','💄','🏠','⚡','📱','💳',
+    '🏥','👗','🎁','🔧','📌','🎯','🌸','🍀','💐','⭐',
+  ];
+
+  const CC_EMOJIS_INCOME = [
+    '💰','💴','💵','🏦','🎗️','👶','🤝','📈','💼','🏆',
+    '✍️','🎨','📷','🎤','💡','🌟','🍀','🎁','🎖️','📌',
+  ];
+
   function openCustomCatModal() {
+    // 現在の inputType を初期値として使用
+    ccSelectedType = inputType;
+    ccSelectedColor = '#F8A4B8';
+    ccSelectedIcon = '📌';
+
+    // フォームリセット
     document.getElementById('cc-name').value = '';
-    document.getElementById('cc-icon').value = '📌';
+    document.getElementById('cc-icon').value = '';
+    document.getElementById('cc-icon-preview').textContent = '📌';
+
+    // 種類ボタンの状態を同期
+    document.querySelectorAll('.cc-type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.cc-type-btn[data-type="${ccSelectedType}"]`)?.classList.add('active');
+
+    // 絵文字グリッド生成
+    renderCcEmojiGrid();
+
+    // カラーグリッド生成
+    renderCcColorGrid();
+
+    // モーダル表示
     document.getElementById('custom-cat-modal').classList.add('show');
+
+    // 名前フィールドにフォーカス
+    setTimeout(() => document.getElementById('cc-name')?.focus(), 200);
+  }
+
+  function renderCcEmojiGrid() {
+    const grid = document.getElementById('cc-emoji-grid');
+    if (!grid) return;
+    const emojis = ccSelectedType === 'income' ? CC_EMOJIS_INCOME : CC_EMOJIS_EXPENSE;
+    grid.innerHTML = '';
+    emojis.forEach((e, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'cc-emoji-btn' + (e === ccSelectedIcon ? ' active' : '');
+      btn.textContent = e;
+      btn.type = 'button';
+      btn.addEventListener('click', () => selectCcEmoji(e));
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderCcColorGrid() {
+    const grid = document.getElementById('cc-color-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    CC_COLORS.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'cc-color-swatch' + (c === ccSelectedColor ? ' active' : '');
+      btn.style.background = c;
+      btn.type = 'button';
+      btn.addEventListener('click', () => selectCcColor(c));
+      grid.appendChild(btn);
+    });
+  }
+
+  function setCcType(type) {
+    ccSelectedType = type;
+    document.querySelectorAll('.cc-type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.cc-type-btn[data-type="${type}"]`)?.classList.add('active');
+    renderCcEmojiGrid();
+  }
+
+  function selectCcEmoji(emoji) {
+    ccSelectedIcon = emoji;
+    document.getElementById('cc-icon-preview').textContent = emoji;
+    document.getElementById('cc-icon').value = emoji;
+    document.querySelectorAll('.cc-emoji-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.cc-emoji-btn').forEach(b => {
+      if (b.textContent === emoji) b.classList.add('active');
+    });
+  }
+
+  function selectCcColor(color) {
+    ccSelectedColor = color;
+    document.querySelectorAll('.cc-color-swatch').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.cc-color-swatch').forEach(b => {
+      if (b.style.background === color || b.style.backgroundColor === color) b.classList.add('active');
+    });
+  }
+
+  function onCcIconInput(val) {
+    if (val) {
+      ccSelectedIcon = val;
+      document.getElementById('cc-icon-preview').textContent = val;
+    }
   }
 
   function closeCustomCatModal() {
@@ -1465,19 +1589,32 @@ const App = (() => {
 
   function saveCustomCategory() {
     const name = document.getElementById('cc-name').value.trim();
-    const icon = document.getElementById('cc-icon').value.trim();
-    if (!name || !icon) return;
+    const icon = ccSelectedIcon || document.getElementById('cc-icon').value.trim() || '📌';
+    if (!name) {
+      // 名前未入力の場合、フォームをシェイク
+      const input = document.getElementById('cc-name');
+      input.style.borderColor = 'var(--danger)';
+      input.focus();
+      setTimeout(() => { input.style.borderColor = ''; }, 1500);
+      return;
+    }
 
     DB.addCustomCategory({
       name,
       icon,
-      type: inputType,
-      color: '#C0C0C0'
+      type: ccSelectedType,
+      color: ccSelectedColor || '#F8A4B8'
     });
 
     closeCustomCatModal();
-    renderCategories();
-    showToastMessage('✨', 'カスタムカテゴリを追加しました！');
+    // 追加したカテゴリのtypeに合わせて入力タイプを切り替える
+    if (ccSelectedType !== inputType) {
+      setInputType(ccSelectedType);
+    } else {
+      renderCategories();
+    }
+    renderSettings();
+    showToastMessage('✨', `「${name}」を追加しました！`);
   }
 
   function confirmDeleteCustomCat(id) {
@@ -1786,6 +1923,11 @@ const App = (() => {
     toggleIdetMemo,
     onIdetMemoBlur,
     getIdetDate,
+    // 🆕 カスタムカテゴリ
+    setCcType,
+    selectCcEmoji,
+    selectCcColor,
+    onCcIconInput,
   };
 })();
 

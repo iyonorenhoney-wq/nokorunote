@@ -606,20 +606,55 @@
 
   <!-- カテゴリ追加モーダル -->
   <div class="modal" id="custom-cat-modal">
-    <div class="modal-content side-up">
-      <h3 class="modal-title">新しいカテゴリ</h3>
-      <div class="form-group">
-        <label>名前</label>
-        <input type="text" id="cc-name" placeholder="例：コーヒー代">
+    <div class="modal-content side-up custom-cat-modal-content">
+      <h3 class="modal-title">✨ カテゴリを追加</h3>
+      <p class="modal-subtitle">よく使う項目をカスタマイズしよう</p>
+
+      <!-- 種類選択 -->
+      <div class="cc-type-toggle" id="cc-type-toggle">
+        <button class="cc-type-btn active" data-type="expense" id="cc-btn-expense">
+          💸 支出
+        </button>
+        <button class="cc-type-btn" data-type="income" id="cc-btn-income">
+          💰 収入
+        </button>
       </div>
+
+      <!-- カテゴリ名 -->
       <div class="form-group">
-        <label>アイコン (絵文字)</label>
-        <div class="emoji-selector">
-          <input type="text" id="cc-icon" value="📌" maxlength="2" style="text-align:center; font-size:24px;">
-          <p class="emoji-hint">キーボードから好きな絵文字を入力してください</p>
+        <label class="form-label">カテゴリ名 <span class="required-badge">必須</span></label>
+        <input type="text" id="cc-name" class="form-input" placeholder="例：子供費、障害者年金など" maxlength="15">
+      </div>
+
+      <!-- アイコン選択 -->
+      <div class="form-group">
+        <label class="form-label">アイコン</label>
+        <div class="cc-icon-area">
+          <div class="cc-icon-preview" id="cc-icon-preview">📌</div>
+          <div class="cc-emoji-grid" id="cc-emoji-grid">
+            <!-- JS生成 -->
+          </div>
+        </div>
+        <input type="text" id="cc-icon" class="cc-icon-input" placeholder="絵文字を直接入力" maxlength="2"
+               oninput="App.onCcIconInput(this.value)">
+      </div>
+
+      <!-- カラー選択 -->
+      <div class="form-group">
+        <label class="form-label">カラー</label>
+        <div class="cc-color-grid" id="cc-color-grid">
+          <!-- JS生成 -->
         </div>
       </div>
-      <button class="action-btn primary full" onclick="App.saveCustomCategory()">カテゴリを追加する</button>
+
+      <!-- ボタン -->
+      <div class="cc-actions">
+        <button class="cc-cancel-btn" onclick="App.closeCustomCatModal()">キャンセル</button>
+        <button class="cc-save-btn" id="cc-save-btn" onclick="App.saveCustomCategory()">
+          ＋ 追加する
+        </button>
+      </div>
+
       <button class="modal-close" onclick="App.closeCustomCatModal()"></button>
     </div>
   </div>
